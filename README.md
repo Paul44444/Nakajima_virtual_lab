@@ -17,3 +17,7 @@ Following functionalities are provided:
 - visualize rendered images, computed optical flow, strains
 - construct groundd truth to compare with flow and strainss
 - compute and visualize error maps
+
+
+-----------------------------------------------------
+For questions, feel free to contact me under paul.friedrich.richter@tum.de.
