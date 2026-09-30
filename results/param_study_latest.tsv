@@ -1,0 +1,4 @@
+# Parameterstudie 30.09.2026 19:57 | exp_normal | r512 | Frames 28 -> 29 | Speckle zufaellig | Belichtung k 1 | Strain-sigma 1 px
+# Basis: lambda 0.05, theta 0.3, nscales 6, nwarps 8, its 500, eps 5E-07, TGV alpha0/alpha1 200
+run	group	lambda	theta	nscales	nwarps	iterations	epsilon	regularization	tgv_ratio	time_s	iterations_total	u_bias	u_rmse	u_mae	u_corr	v_bias	v_rmse	v_mae	v_corr	exx_mae	exx_rmse	exx_corr	exx_rel_mae	eyy_mae	eyy_rmse	eyy_corr	eyy_rel_mae
+1	basis	0.05	0.3	6	8	500	5E-07	TGV	200	7.26	20000	-0.0602517	0.4406	0.19819	0.987089	0.0517364	0.152771	0.10815	0.974423	0.0115632	0.0475866	0.815666	0.435795	0.00209764	0.00387869	0.867798	0.527394

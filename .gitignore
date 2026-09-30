@@ -1,0 +1,66 @@
+# --- Unity generated ---
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-build.properties
+.vs/
+.vscode/
+.idea/
+
+# --- large data (provided as a separate archive, see README) ---
+/Assets/verts/
+/Assets/verts.meta
+/Assets/cam00/
+/Assets/cam00.meta
+/Assets/Resources/Targets/
+/Assets/Resources/Targets.meta
+/Assets/Resources/blender_data/
+/Assets/Resources/blender_data.meta
+/Assets/nakajima_full_angle/
+/Assets/nakajima_full_angle.meta
+
+# --- results written by the lab (reference tables are in results/) ---
+/Assets/analysis_results/
+/Assets/analysis_results.meta
+/Assets/output/
+/Assets/output.meta
+/Assets?*/
+/Assets?*.meta
+
+# --- third-party content that must not be redistributed ---
+/Assets/GreenMossGames/
+/Assets/GreenMossGames.meta
+/Assets/TextMesh Pro/Examples & Extras/
+/Assets/TextMesh Pro/Examples & Extras.meta
+
+# --- local tools and environments ---
+/tools/
+__pycache__/
+*.pyc
+/path_base.txt
+/backup_scripts/
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+.DS_Store
+Thumbs.db

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying manuscript."
+title: "Nakajima Virtual Lab"
+type: software
+authors:
+  - family-names: Richter
+    given-names: Paul Friedrich
+    affiliation: Technical University of Munich
+    email: paul.friedrich.richter@tum.de
+repository-code: "https://github.com/Paul44444/Nakajima_virtual_lab"
+license: MIT
+keywords:
+  - digital image correlation
+  - optical flow
+  - stereo reconstruction
+  - Nakajima test
+  - sheet-metal forming
+  - Unity
+  - virtual laboratory
+preferred-citation:
+  type: article
+  title: "A Virtual Nakajima Forming Case Study for Quantitative Evaluation of Image-Based Displacement and Stereo Reconstruction"
+  authors:
+    - family-names: Richter
+      given-names: Paul Friedrich
+  status: submitted

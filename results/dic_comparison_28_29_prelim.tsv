@@ -1,0 +1,5 @@
+method	epe_px	epe_edge_px	mae_u_px	mae_v_px	runtime_s	n_points
+TV	0.1535	1.5828	0.1161	0.0726	nan	183855
+pydic	0.1536	2.2310	0.1374	0.0422	0.11	7381
+muDIC	0.3244	2.9612	0.3077	0.0793	0.80	144
+DICe	0.1572	2.3400	0.1456	0.0376	26.16	6780

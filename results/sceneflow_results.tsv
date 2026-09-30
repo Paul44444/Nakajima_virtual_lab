@@ -1,0 +1,3 @@
+experiment	lighting_intensity	peak_electrons	speckle_size	frame_a	frame_b	epe3d_mm	rel_epe3d	mae_x_mm	mae_y_mm	mae_z_mm	rel_mae_x	rel_mae_y	rel_mae_z	mean_abs_ref_mm	epe3d_b_mm	rel_epe3d_b	pos_mae_mm	flow0_epe_px	flow1_epe_px	disp_epe_px	selftest_mm	n_px	mapping	render_res	regularization	strain_sigma
+lighting_1	1	0	0.07	1	27	0.241168	0.0164576	0.0498078	0.0653921	0.20546	0.111516	0.0454766	0.0141213	14.6539	0.236568	0.0161437	0.580584	0.583144	0.403086	0.122145	3.63673E-13	175900	o7m6	512	TGV	20
+lighting_1	1	0	0.07	1	27	0.105338	0.00718824	0.0504855	0.0332424	0.0675882	0.112693	0.0231152	0.00464525	14.6542	0.0976646	0.00666461	0.0415336	0.408582	0.406273	0.118528	3.64412E-13	176003	o7m6	512	TGV	20

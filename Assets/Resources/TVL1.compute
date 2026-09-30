@@ -1,0 +1,284 @@
+//23092026 GPU-Version des TV-L1-Loesers einer Pyramidenstufe (Dual_TVL1_optic_flow_new in vis_3D.cs).
+//  Die Rechenschritte entsprechen 1:1 der CPU-Version (Zach/Pock/Bischof bzw. Sanchez/IPOL):
+//    KWarp   : Bicubic-Warp von I1, I1x, I1y mit (u1,u2) + |grad I1w|^2 + konstanter Teil von rho
+//    KStepA  : Schwellwertschritt (d1,d2) -> v, Divergenz von p, u = v + theta*div(p), Teilsummen des Fehlers
+//    KStepB  : Vorwaertsgradient von u + Update der dualen Variablen p
+//    KReduce : Fehler aufsummieren, Iteration zaehlen, bei error <= eps^2 "done" setzen
+//  Nach "done" kehren alle Kernels sofort zurueck, dadurch bricht die GPU exakt wie die CPU-Schleife
+//  ab, ohne dass die CPU nach jeder Iteration auf die GPU warten muss.
+//  Puffer, die ein Kernel nur liest, sind als *_r (SRV) deklariert, damit kein Kernel mehr als 8 UAVs braucht.
+
+#pragma kernel KWarp
+#pragma kernel KStepA
+#pragma kernel KStepB
+#pragma kernel KReduce
+
+#define GROUP 256
+
+int nx;
+int ny;
+int size_px;
+int num_groups;
+int warp_idx;
+float l_t;          // lambda * theta
+float theta;
+float taut;         // tau / theta
+float eps_sq;       // epsilon^2
+float grad_is_zero; // GRAD_IS_ZERO
+
+// KWarp
+StructuredBuffer<float> I0_r;
+StructuredBuffer<float> I1_r;
+StructuredBuffer<float> I1x_r;
+StructuredBuffer<float> I1y_r;
+RWStructuredBuffer<float> I1wx;
+RWStructuredBuffer<float> I1wy;
+RWStructuredBuffer<float> Grad;
+RWStructuredBuffer<float> RhoC;
+
+// KStepA
+StructuredBuffer<float> I1wx_r;
+StructuredBuffer<float> I1wy_r;
+StructuredBuffer<float> Grad_r;
+StructuredBuffer<float> RhoC_r;
+StructuredBuffer<float> P11_r;
+StructuredBuffer<float> P12_r;
+StructuredBuffer<float> P21_r;
+StructuredBuffer<float> P22_r;
+RWStructuredBuffer<float> U1;
+RWStructuredBuffer<float> U2;
+RWStructuredBuffer<float> Partial;
+
+// KStepB
+StructuredBuffer<float> U1_r;
+StructuredBuffer<float> U2_r;
+RWStructuredBuffer<float> P11;
+RWStructuredBuffer<float> P12;
+RWStructuredBuffer<float> P21;
+RWStructuredBuffer<float> P22;
+
+// KReduce
+StructuredBuffer<float> Partial_r;
+RWStructuredBuffer<uint> State;    // [0] = done, [1] = Iterationen
+RWStructuredBuffer<float> ErrOut;  // [0] = letzter Fehler
+StructuredBuffer<uint> State_r;
+
+groupshared float gs_sum[GROUP];
+
+// ---------------------------------------------------------------- Bicubic (bicubic_interpolation_at)
+
+bool is_nan_bits(float x)
+{
+    // NaN-Test ueber die Bits, damit ihn der Compiler nicht wegoptimiert (nans2zero der CPU-Version)
+    return (asuint(x) & 0x7fffffffu) > 0x7f800000u;
+}
+
+float fetch0(StructuredBuffer<float> img, int x, int y)
+{
+    float val = img[x + nx * y];
+    return is_nan_bits(val) ? 0.0f : val;
+}
+
+int neumann_bc(int x, int n, inout bool out_flag)
+{
+    if (x < 0) { x = 0; out_flag = true; }
+    else if (x >= n) { x = n - 1; out_flag = true; }
+    return x;
+}
+
+float cubic_cell(float v0, float v1, float v2, float v3, float x)
+{
+    return v1 + 0.5f * x * (v2 - v0 +
+        x * (2.0f * v0 - 5.0f * v1 + 4.0f * v2 - v3 +
+        x * (3.0f * (v1 - v2) + v3 - v0)));
+}
+
+// border_out = true (wie im CPU-Aufruf): ausserhalb des Bildes -> 0
+float bicubic_at(StructuredBuffer<float> img, float uu, float vv)
+{
+    int sx = (uu < 0.0f) ? -1 : 1;
+    int sy = (vv < 0.0f) ? -1 : 1;
+    int iu = (int)uu; // Abschneiden Richtung 0, wie (int) in C#
+    int iv = (int)vv;
+
+    bool out_flag = false;
+    int x   = neumann_bc(iu, nx, out_flag);
+    int y   = neumann_bc(iv, ny, out_flag);
+    int mx  = neumann_bc(iu - sx, nx, out_flag);
+    int my  = neumann_bc(iv - sy, ny, out_flag);
+    int dx  = neumann_bc(iu + sx, nx, out_flag);
+    int dy  = neumann_bc(iv + sy, ny, out_flag);
+    int ddx = neumann_bc(iu + 2 * sx, nx, out_flag);
+    int ddy = neumann_bc(iv + 2 * sy, ny, out_flag);
+
+    if (out_flag)
+        return 0.0f;
+
+    float fx = uu - (float)x;
+    float fy = vv - (float)y;
+
+    // Spalten mx, x, dx, ddx jeweils ueber die Zeilen my, y, dy, ddy interpolieren (pol[k] in der CPU-Version)
+    float c0 = cubic_cell(fetch0(img, mx, my),  fetch0(img, mx, y),  fetch0(img, mx, dy),  fetch0(img, mx, ddy),  fy);
+    float c1 = cubic_cell(fetch0(img, x, my),   fetch0(img, x, y),   fetch0(img, x, dy),   fetch0(img, x, ddy),   fy);
+    float c2 = cubic_cell(fetch0(img, dx, my),  fetch0(img, dx, y),  fetch0(img, dx, dy),  fetch0(img, dx, ddy),  fy);
+    float c3 = cubic_cell(fetch0(img, ddx, my), fetch0(img, ddx, y), fetch0(img, ddx, dy), fetch0(img, ddx, ddy), fy);
+    return cubic_cell(c0, c1, c2, c3, fx);
+}
+
+// ---------------------------------------------------------------- Kernels
+
+[numthreads(GROUP, 1, 1)]
+void KWarp(uint3 id : SV_DispatchThreadID)
+{
+    int p = (int)id.x;
+    if (p >= size_px)
+        return;
+    int i = (int)((uint)p / (uint)nx); // uint-Division ist schneller
+    int j = p - i * nx;
+
+    float u1 = U1_r[p];
+    float u2 = U2_r[p];
+    float uu = (float)j + u1;
+    float vv = (float)i + u2;
+
+    float w  = bicubic_at(I1_r, uu, vv);
+    float wx = bicubic_at(I1x_r, uu, vv);
+    float wy = bicubic_at(I1y_r, uu, vv);
+
+    I1wx[p] = wx;
+    I1wy[p] = wy;
+    Grad[p] = wx * wx + wy * wy;
+    RhoC[p] = w - wx * u1 - wy * u2 - I0_r[p];
+}
+
+[numthreads(GROUP, 1, 1)]
+void KStepA(uint3 id : SV_DispatchThreadID, uint3 gid : SV_GroupID, uint gi : SV_GroupIndex)
+{
+    if (State_r[0] != 0u)
+        return; // gleichmaessig fuer alle Threads -> kein Problem mit den Barrieren unten
+
+    int p = (int)id.x;
+    float contrib = 0.0f;
+
+    if (p < size_px)
+    {
+        int i = (int)((uint)p / (uint)nx); // uint-Division ist schneller
+        int j = p - i * nx;
+
+        float u1 = U1[p];
+        float u2 = U2[p];
+        float wx = I1wx_r[p];
+        float wy = I1wy_r[p];
+        float g  = Grad_r[p];
+
+        // Schwellwertschritt (find_d1d2)
+        float rho = RhoC_r[p] + (wx * u1 + wy * u2);
+        float d1, d2;
+        if (rho < -l_t * g)
+        {
+            d1 = l_t * wx;
+            d2 = l_t * wy;
+        }
+        else if (rho > l_t * g)
+        {
+            d1 = -l_t * wx;
+            d2 = -l_t * wy;
+        }
+        //29092026 Bugfix: Schutz vor g = 0 in jedem Warp (wie IPOL), nicht nur im ersten - sonst -rho/0 = NaN
+        //  in gleichmaessigen Flaechen (ganz schwarz / gesaettigt), NaN breitet sich aufs ganze Feld aus
+        else if (g < grad_is_zero)
+        {
+            d1 = 0.0f;
+            d2 = 0.0f;
+        }
+        else
+        {
+            float fi = -rho / g;
+            d1 = fi * wx;
+            d2 = fi * wy;
+        }
+        float v1 = u1 + d1;
+        float v2 = u2 + d2;
+
+        // Divergenz mit Rueckwaertsdifferenzen und denselben Randregeln wie divergence()
+        float dp1x = (j == 0) ? P11_r[p] : ((j == nx - 1) ? -P11_r[p - 1] : (P11_r[p] - P11_r[p - 1]));
+        float dp1y = (i == 0) ? P12_r[p] : ((i == ny - 1) ? -P12_r[p - nx] : (P12_r[p] - P12_r[p - nx]));
+        float dp2x = (j == 0) ? P21_r[p] : ((j == nx - 1) ? -P21_r[p - 1] : (P21_r[p] - P21_r[p - 1]));
+        float dp2y = (i == 0) ? P22_r[p] : ((i == ny - 1) ? -P22_r[p - nx] : (P22_r[p] - P22_r[p - nx]));
+
+        float u1n = v1 + theta * (dp1x + dp1y);
+        float u2n = v2 + theta * (dp2x + dp2y);
+        U1[p] = u1n;
+        U2[p] = u2n;
+
+        contrib = (u1n - u1) * (u1n - u1) + (u2n - u2) * (u2n - u2);
+    }
+
+    gs_sum[gi] = contrib;
+    GroupMemoryBarrierWithGroupSync();
+    [unroll]
+    for (uint s = GROUP / 2; s > 0; s >>= 1)
+    {
+        if (gi < s)
+            gs_sum[gi] += gs_sum[gi + s];
+        GroupMemoryBarrierWithGroupSync();
+    }
+    if (gi == 0)
+        Partial[gid.x] = gs_sum[0];
+}
+
+[numthreads(GROUP, 1, 1)]
+void KStepB(uint3 id : SV_DispatchThreadID)
+{
+    if (State_r[0] != 0u)
+        return;
+    int p = (int)id.x;
+    if (p >= size_px)
+        return;
+    int i = (int)((uint)p / (uint)nx); // uint-Division ist schneller
+    int j = p - i * nx;
+
+    // Vorwaertsgradient (forward_gradient): am rechten/unteren Rand 0
+    float u1 = U1_r[p];
+    float u2 = U2_r[p];
+    float u1x = (j < nx - 1) ? (U1_r[p + 1] - u1) : 0.0f;
+    float u1y = (i < ny - 1) ? (U1_r[p + nx] - u1) : 0.0f;
+    float u2x = (j < nx - 1) ? (U2_r[p + 1] - u2) : 0.0f;
+    float u2y = (i < ny - 1) ? (U2_r[p + nx] - u2) : 0.0f;
+
+    // duale Variable (find_p1p2)
+    float ng1 = 1.0f + taut * sqrt(u1x * u1x + u1y * u1y);
+    float ng2 = 1.0f + taut * sqrt(u2x * u2x + u2y * u2y);
+    P11[p] = (P11[p] + taut * u1x) / ng1;
+    P12[p] = (P12[p] + taut * u1y) / ng1;
+    P21[p] = (P21[p] + taut * u2x) / ng2;
+    P22[p] = (P22[p] + taut * u2y) / ng2;
+}
+
+[numthreads(GROUP, 1, 1)]
+void KReduce(uint gi : SV_GroupIndex)
+{
+    // nur eine Gruppe. Kein fruehes return vor den Barrieren (UAV-Lesen gilt dem Compiler als
+    // "varying"); die Summe ist billig, der done-Test erfolgt erst unten in Thread 0.
+    float acc = 0.0f;
+    for (int k = (int)gi; k < num_groups; k += GROUP)
+        acc += Partial_r[k];
+    gs_sum[gi] = acc;
+    GroupMemoryBarrierWithGroupSync();
+    [unroll]
+    for (uint s = GROUP / 2; s > 0; s >>= 1)
+    {
+        if (gi < s)
+            gs_sum[gi] += gs_sum[gi + s];
+        GroupMemoryBarrierWithGroupSync();
+    }
+    if (gi == 0 && State[0] == 0u)
+    {
+        float err = gs_sum[0] / (float)size_px;
+        ErrOut[0] = err;
+        State[1] = State[1] + 1u;
+        // CPU: while (error > eps_sq && n < MAX) -> Abbruch auch bei NaN
+        if (!(err > eps_sq))
+            State[0] = 1u;
+    }
+}
