@@ -17,6 +17,9 @@ public class Experiment_Control : MonoBehaviour
     Button but2;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers this control at the lab controller and wires the forward/back buttons.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -32,12 +35,19 @@ public class Experiment_Control : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ; ;
         ;
     }
 
+    /// <summary>
+    /// Shows the name of the current experiment in the label.
+    /// </summary>
+    /// <param name="experiment">Experiment label to display.</param>
     public void refresh_info(string experiment)
     {
         Transform t_label = t_panel.Find("t_label");
@@ -45,6 +55,9 @@ public class Experiment_Control : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Switches the display to the next experiment of the list of render actions.
+    /// </summary>
     public void forward_action()
     {
         string experiment = vis.get_experiment();
@@ -87,6 +100,9 @@ public class Experiment_Control : MonoBehaviour
         vis.refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Switches the display to the previous experiment of the list of render actions.
+    /// </summary>
     public void back_action()
     {
         string experiment = vis.get_experiment();

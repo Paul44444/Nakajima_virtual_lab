@@ -10,6 +10,9 @@ public class Open_Close : MonoBehaviour
     private string file_path;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -18,12 +21,18 @@ public class Open_Close : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ;
         ;
     }
 
+    /// <summary>
+    /// Toggles the visibility of the parent panel.
+    /// </summary>
     void open_close()
     {
         Transform parent = gameObject.transform.parent;

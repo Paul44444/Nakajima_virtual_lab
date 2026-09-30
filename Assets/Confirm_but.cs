@@ -17,6 +17,9 @@ public class Confirm_but : MonoBehaviour
     public Transform designer;
     
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the experiment-design panel and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -31,16 +34,25 @@ public class Confirm_but : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Click handler: collects the values of the experiment-design panel.
+    /// </summary>
     public void on_click()
     {
         collect_vals();
     }
 
+    /// <summary>
+    /// Reads camera positions and other settings from the input fields of the experiment-design panel and passes them to the lab controller.
+    /// </summary>
     public void collect_vals()
     {
         // info (paul): obtaining parameters from the inputs of all the specific input places

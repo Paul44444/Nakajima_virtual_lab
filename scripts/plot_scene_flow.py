@@ -23,6 +23,15 @@ COMP_TITLE = {"x": "x (Stereobasis)", "y": "y (quer)", "z": "z (zu den Kameras)"
 
 
 def panel(folder, res):
+    """Overview figure of the scene flow (TV, reference, difference per component, end-point error).
+
+    Args:
+        folder: Folder.
+        res: Resolution.
+
+    Returns:
+        Output path, or None.
+    """
     tv = {c: load(folder, "sceneflow_tv_" + c, res) for c in "xyz"}
     ref = {c: load(folder, "sceneflow_ref_" + c, res) for c in "xyz"}
     if any(v is None for v in list(tv.values()) + list(ref.values())):
@@ -78,6 +87,7 @@ def panel(folder, res):
 
 
 def main():
+    """Command line: resolution followed by folders."""
     res = sys.argv[1]
     for folder in sys.argv[2:]:
         out = panel(folder, res)

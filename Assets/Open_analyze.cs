@@ -23,6 +23,9 @@ public class Open_analyze : MonoBehaviour
     Design_Exp_Button designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the analysis panel, its buttons, and the other panels; registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -50,11 +53,17 @@ public class Open_analyze : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Toggles the analysis panel (with the save, analyze, and load buttons) and closes the other panels.
+    /// </summary>
     public void on_click()
     {
         designer.close_my();
@@ -64,6 +73,9 @@ public class Open_analyze : MonoBehaviour
         load_but.gameObject.SetActive(!analyze_panel.gameObject.activeSelf);
         analyze_panel.gameObject.SetActive(!analyze_panel.gameObject.activeSelf);
     }
+    /// <summary>
+    /// Hides the analysis panel and its buttons.
+    /// </summary>
     public void close_my()
     {
         save_but.gameObject.SetActive(false);

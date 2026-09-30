@@ -13,6 +13,13 @@ public static class NakajimaRealImageComparison
 {
     private const int RegistrationSize = 96;
 
+    /// <summary>
+    /// Renders the lab in the Nakajima look, registers the real photograph to the rendered camera image (low-frequency luminance, scale and offset), optionally searches the best field of view, and writes images, a text report, and a TSV table of the comparison.
+    /// </summary>
+    /// <param name="renderer">Lab controller that renders the image.</param>
+    /// <param name="requestedFile">File name of the photograph (default image-000000.png).</param>
+    /// <param name="requestedFov">Field of view in degrees, or auto for a search.</param>
+    /// <param name="useOtherCamera">True to use cam_1 instead of cam_0.</param>
     public static void Run(vis_3D renderer, string requestedFile,
         string requestedFov = "auto", bool useOtherCamera = false)
     {
@@ -204,6 +211,9 @@ public static class NakajimaRealImageComparison
         }
     }
 
+    /// <summary>
+    /// Shows the images and the report of the last saved comparison.
+    /// </summary>
     public static void LoadPrevious()
     {
         string reportPath = Path.Combine(OutputDirectory, "vergleich.txt");
@@ -227,6 +237,11 @@ public static class NakajimaRealImageComparison
         get { return Path.Combine(Application.dataPath, "analysis_results", "nakajima_real_comparison"); }
     }
 
+    /// <summary>
+    /// Finds the photograph in Assets/cam00 or, as fallback, in Assets/nakajima_full_angle.
+    /// </summary>
+    /// <param name="fileName">File name of the photograph.</param>
+    /// <returns>Full path, or null if not found.</returns>
     private static string ResolveRealImagePath(string fileName)
     {
         // New Nakajima recordings live in cam00. Keep the previous folder as a
@@ -241,12 +256,24 @@ public static class NakajimaRealImageComparison
         return Path.Combine(Application.dataPath, folders[0], fileName);
     }
 
+    /// <summary>
+    /// Checks whether an image lies in the folder cam00 (current Nakajima recordings).
+    /// </summary>
+    /// <param name="path">Path of the image.</param>
+    /// <returns>True for images in cam00.</returns>
     private static bool IsCam00Image(string path)
     {
         string parent = Path.GetFileName(Path.GetDirectoryName(path));
         return string.Equals(parent, "cam00", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Correlation between rendered image and photograph for a given registration, on blurred low-resolution versions.
+    /// </summary>
+    /// <param name="rendered">Rendered image.</param>
+    /// <param name="real">Photograph.</param>
+    /// <param name="transform">Registration to evaluate.</param>
+    /// <returns>Correlation coefficient.</returns>
     private static float EvaluateRegistrationScore(Texture2D rendered, Texture2D real,
         Registration transform)
     {
@@ -259,6 +286,11 @@ public static class NakajimaRealImageComparison
 
     //21092026 mittiger quadratischer Ausschnitt (Kantenlaenge = kleinere Seite); gibt bei
     //bereits quadratischer Textur dieselbe zurueck, sonst eine neue (Original wird zerstoert).
+    /// <summary>
+    /// Cuts the central square out of a texture (side = shorter edge); a square texture is returned unchanged, otherwise the original is destroyed.
+    /// </summary>
+    /// <param name="source">Texture to crop.</param>
+    /// <returns>Square texture.</returns>
     private static Texture2D CenterCropSquare(Texture2D source)
     {
         if (source == null || source.width == source.height)
@@ -274,6 +306,11 @@ public static class NakajimaRealImageComparison
         return cropped;
     }
 
+    /// <summary>
+    /// Loads an image file into a texture.
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
+    /// <returns>The texture (throws IOException if the file cannot be read).</returns>
     private static Texture2D LoadTexture(string path)
     {
         Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -282,6 +319,12 @@ public static class NakajimaRealImageComparison
         return texture;
     }
 
+    /// <summary>
+    /// Transfers the vertical brightness profile of the registered photograph to the rendered image (image-space correction used for the visual comparison only, not a cast shadow).
+    /// </summary>
+    /// <param name="rendered">Rendered image.</param>
+    /// <param name="registeredReal">Photograph registered to the rendered image.</param>
+    /// <returns>Corrected rendered image.</returns>
     private static Texture2D ApplyVerticalIlluminationProfile(Texture2D rendered,
         Texture2D registeredReal)
     {
@@ -338,6 +381,12 @@ public static class NakajimaRealImageComparison
         return MakeTexture(width, height, output);
     }
 
+    /// <summary>
+    /// Searches scale and offset that align the photograph with the rendered image by maximising the correlation of low-pass filtered luminance.
+    /// </summary>
+    /// <param name="rendered">Rendered image.</param>
+    /// <param name="real">Photograph.</param>
+    /// <returns>Best registration with its score.</returns>
     private static Registration FindRegistration(Texture2D rendered, Texture2D real)
     {
         float[] synthetic = Downsample(rendered, RegistrationSize, RegistrationSize);
@@ -376,6 +425,14 @@ public static class NakajimaRealImageComparison
         return best;
     }
 
+    /// <summary>
+    /// Correlation between a target image and a source image transformed by a registration (border of 8 px excluded).
+    /// </summary>
+    /// <param name="target">Target gray values (size x size).</param>
+    /// <param name="source">Source gray values (size x size).</param>
+    /// <param name="size">Side length of both images.</param>
+    /// <param name="t">Registration applied to the source.</param>
+    /// <returns>Correlation coefficient.</returns>
     private static float Score(float[] target, float[] source, int size, Registration t)
     {
         double sumA = 0, sumB = 0, sumAA = 0, sumBB = 0, sumAB = 0;
@@ -402,6 +459,14 @@ public static class NakajimaRealImageComparison
         return (float)(covariance / Math.Sqrt(Math.Max(1e-12, varianceA * varianceB)));
     }
 
+    /// <summary>
+    /// Resamples the photograph into the geometry of the rendered image according to a registration.
+    /// </summary>
+    /// <param name="real">Photograph.</param>
+    /// <param name="width">Width of the rendered image.</param>
+    /// <param name="height">Height of the rendered image.</param>
+    /// <param name="t">Registration.</param>
+    /// <returns>Warped photograph.</returns>
     private static Texture2D WarpRealToRendered(Texture2D real, int width, int height, Registration t)
     {
         Color[] source = real.GetPixels();
@@ -420,6 +485,13 @@ public static class NakajimaRealImageComparison
         return MakeTexture(width, height, output);
     }
 
+    /// <summary>
+    /// Samples the luminance of a texture on a coarser grid.
+    /// </summary>
+    /// <param name="texture">Source texture.</param>
+    /// <param name="width">Target width.</param>
+    /// <param name="height">Target height.</param>
+    /// <returns>Gray values of the coarse grid.</returns>
     private static float[] Downsample(Texture2D texture, int width, int height)
     {
         Color[] pixels = texture.GetPixels();
@@ -434,6 +506,13 @@ public static class NakajimaRealImageComparison
         return result;
     }
 
+    /// <summary>
+    /// Box filter of a square gray-value image.
+    /// </summary>
+    /// <param name="input">Gray values (size x size).</param>
+    /// <param name="size">Side length.</param>
+    /// <param name="radius">Filter radius in pixels.</param>
+    /// <returns>Filtered gray values.</returns>
     private static float[] BoxBlur(float[] input, int size, int radius)
     {
         float[] output = new float[input.Length];
@@ -453,6 +532,13 @@ public static class NakajimaRealImageComparison
         return output;
     }
 
+    /// <summary>
+    /// Applies a linear gray-value mapping (gain and offset) and converts to gray.
+    /// </summary>
+    /// <param name="input">Source texture.</param>
+    /// <param name="gain">Multiplicative factor.</param>
+    /// <param name="offset">Additive offset.</param>
+    /// <returns>Mapped texture.</returns>
     private static Texture2D ApplyLinearMatch(Texture2D input, float gain, float offset)
     {
         Color[] pixels = input.GetPixels();
@@ -464,6 +550,12 @@ public static class NakajimaRealImageComparison
         return MakeTexture(input.width, input.height, pixels);
     }
 
+    /// <summary>
+    /// Similarity measures between two images: correlation, SSIM, MAE, and RMSE of the luminance.
+    /// </summary>
+    /// <param name="a">First image.</param>
+    /// <param name="b">Second image.</param>
+    /// <returns>Metrics of the comparison.</returns>
     private static Metrics CalculateMetrics(Texture2D a, Texture2D b)
     {
         float[] aa = Grayscale(a);
@@ -492,6 +584,12 @@ public static class NakajimaRealImageComparison
         };
     }
 
+    /// <summary>
+    /// Mean, standard deviation, and contrast of the luminance inside the image without a border.
+    /// </summary>
+    /// <param name="texture">Image to measure.</param>
+    /// <param name="margin">Excluded border as fraction of the image size.</param>
+    /// <returns>Statistics of the image.</returns>
     private static Statistics Measure(Texture2D texture, float margin)
     {
         Color[] pixels = texture.GetPixels();
@@ -512,6 +610,12 @@ public static class NakajimaRealImageComparison
         return new Statistics { Mean = mean, Std = Mathf.Sqrt(Mathf.Max(0f, variance)) };
     }
 
+    /// <summary>
+    /// Colour overlay of two images (rendered in red, photograph in cyan).
+    /// </summary>
+    /// <param name="rendered">Rendered image.</param>
+    /// <param name="real">Photograph.</param>
+    /// <returns>Overlay texture.</returns>
     private static Texture2D MakeOverlay(Texture2D rendered, Texture2D real)
     {
         Color[] a = rendered.GetPixels();
@@ -522,6 +626,13 @@ public static class NakajimaRealImageComparison
         return MakeTexture(rendered.width, rendered.height, result);
     }
 
+    /// <summary>
+    /// Absolute-difference image, scaled relative to the mean error.
+    /// </summary>
+    /// <param name="rendered">Rendered image.</param>
+    /// <param name="real">Photograph.</param>
+    /// <param name="meanError">Mean absolute error used for the scaling.</param>
+    /// <returns>Difference texture.</returns>
     private static Texture2D MakeDifference(Texture2D rendered, Texture2D real, float meanError)
     {
         Color[] a = rendered.GetPixels();
@@ -536,6 +647,19 @@ public static class NakajimaRealImageComparison
         return MakeTexture(rendered.width, rendered.height, result);
     }
 
+    /// <summary>
+    /// Composes the text report of the comparison (registration, similarity, statistics, photometric match).
+    /// </summary>
+    /// <param name="fileName">Photograph.</param>
+    /// <param name="comparisonFov">Field of view used.</param>
+    /// <param name="fovSearchReport">Result of the field-of-view search (optional).</param>
+    /// <param name="t">Registration.</param>
+    /// <param name="m">Similarity metrics.</param>
+    /// <param name="rendered">Statistics of the rendered image.</param>
+    /// <param name="real">Statistics of the photograph.</param>
+    /// <param name="gain">Photometric gain.</param>
+    /// <param name="offset">Photometric offset.</param>
+    /// <returns>Report text.</returns>
     private static string BuildReport(string fileName, float comparisonFov, string fovSearchReport,
         Registration t, Metrics m,
         Statistics rendered, Statistics real, float gain, float offset)
@@ -561,6 +685,18 @@ public static class NakajimaRealImageComparison
             + "\n\nSSIM/Korrelation: 1 ist ideal. MAE/RMSE: 0 ist ideal.";
     }
 
+    /// <summary>
+    /// Writes the numbers of the comparison as a one-line TSV table.
+    /// </summary>
+    /// <param name="path">Output file.</param>
+    /// <param name="fileName">Photograph.</param>
+    /// <param name="comparisonFov">Field of view used.</param>
+    /// <param name="t">Registration.</param>
+    /// <param name="m">Similarity metrics.</param>
+    /// <param name="rendered">Statistics of the rendered image.</param>
+    /// <param name="real">Statistics of the photograph.</param>
+    /// <param name="gain">Photometric gain.</param>
+    /// <param name="offset">Photometric offset.</param>
     private static void WriteTsv(string path, string fileName, float comparisonFov,
         Registration t, Metrics m,
         Statistics rendered, Statistics real, float gain, float offset)
@@ -578,6 +714,13 @@ public static class NakajimaRealImageComparison
         File.WriteAllText(path, header + row, Encoding.UTF8);
     }
 
+    /// <summary>
+    /// Saves a texture as PNG.
+    /// </summary>
+    /// <param name="texture">Texture to save.</param>
+    /// <param name="directory">Output folder.</param>
+    /// <param name="name">File name.</param>
+    /// <returns>Full path of the written file.</returns>
     private static string Save(Texture2D texture, string directory, string name)
     {
         string path = Path.Combine(directory, name);
@@ -585,6 +728,13 @@ public static class NakajimaRealImageComparison
         return path;
     }
 
+    /// <summary>
+    /// Creates an RGB texture from pixel colours.
+    /// </summary>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <param name="pixels">Pixel colours (row-major).</param>
+    /// <returns>The texture.</returns>
     private static Texture2D MakeTexture(int width, int height, Color[] pixels)
     {
         Texture2D texture = new Texture2D(width, height, TextureFormat.RGB24, false);
@@ -593,6 +743,11 @@ public static class NakajimaRealImageComparison
         return texture;
     }
 
+    /// <summary>
+    /// Luminance of all pixels of a texture.
+    /// </summary>
+    /// <param name="texture">Source texture.</param>
+    /// <returns>Gray values.</returns>
     private static float[] Grayscale(Texture2D texture)
     {
         Color[] pixels = texture.GetPixels();
@@ -602,6 +757,15 @@ public static class NakajimaRealImageComparison
         return result;
     }
 
+    /// <summary>
+    /// Bilinear sampling of a gray-value image at normalised coordinates.
+    /// </summary>
+    /// <param name="values">Gray values (row-major).</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <param name="u">Horizontal coordinate in 0..1.</param>
+    /// <param name="v">Vertical coordinate in 0..1.</param>
+    /// <returns>Interpolated value.</returns>
     private static float Sample(float[] values, int width, int height, float u, float v)
     {
         float x = Mathf.Clamp01(u) * (width - 1);
@@ -613,6 +777,15 @@ public static class NakajimaRealImageComparison
             Mathf.Lerp(values[y1 * width + x0], values[y1 * width + x1], fx), fy);
     }
 
+    /// <summary>
+    /// Bilinear sampling of a colour image at pixel coordinates.
+    /// </summary>
+    /// <param name="values">Pixel colours (row-major).</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <param name="x">Horizontal pixel coordinate.</param>
+    /// <param name="y">Vertical pixel coordinate.</param>
+    /// <returns>Interpolated colour.</returns>
     private static Color SampleColor(Color[] values, int width, int height, float x, float y)
     {
         x = Mathf.Clamp(x, 0f, width - 1f);
@@ -624,16 +797,30 @@ public static class NakajimaRealImageComparison
             Color.Lerp(values[y1 * width + x0], values[y1 * width + x1], fx), fy);
     }
 
+    /// <summary>
+    /// Relative luminance of a colour (Rec. 709 weights).
+    /// </summary>
+    /// <param name="c">Colour.</param>
+    /// <returns>Luminance in 0..1.</returns>
     private static float Luminance(Color c)
     {
         return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
     }
 
+    /// <summary>
+    /// Formats a float with six significant digits (invariant culture).
+    /// </summary>
+    /// <param name="value">Value to format.</param>
+    /// <returns>Formatted string.</returns>
     private static string F(float value)
     {
         return value.ToString("G6", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Shows an error message in the gallery report and logs it as warning.
+    /// </summary>
+    /// <param name="message">Message text.</param>
     private static void ShowError(string message)
     {
         ExperimentImageGallery.SetResultsText(message);
@@ -641,6 +828,10 @@ public static class NakajimaRealImageComparison
         Debug.LogWarning(message);
     }
 
+    /// <summary>
+    /// Destroys a texture if it exists.
+    /// </summary>
+    /// <param name="texture">Texture to destroy.</param>
     private static void DestroyTexture(Texture2D texture)
     {
         if (texture != null)

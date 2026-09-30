@@ -14,6 +14,7 @@ from PIL import Image
 
 
 def main():
+    """Command line: derives speckle textures from the synthetic experiment texture (seed, contrast)."""
     here = os.path.dirname(os.path.abspath(__file__))
     cam00 = os.path.join(os.path.dirname(here), "Assets", "cam00")
     ap = argparse.ArgumentParser()

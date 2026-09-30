@@ -34,6 +34,19 @@ PANELS = [  # (Modus, Titel, Farbbalken-Beschriftung)
 
 
 def load_map(folder, exp, mode, comp, res, rot):
+    """Loads an exported map (PNG plus params file) and converts it to physical values.
+
+    Args:
+        folder: Folder of the maps.
+        exp: Experiment.
+        mode: value, value_ref, loss_abs, or loss_rel.
+        comp: Component u or v.
+        res: Resolution.
+        rot: Number of 90-degree rotations.
+
+    Returns:
+        Map with NaN outside the sample.
+    """
     stem = "%s_uv_normal_%s_%s_r%d" % (exp, mode, comp, res)
     png = os.path.join(folder, "im_" + stem + ".png")
     params = os.path.join(folder, "params_" + stem + ".txt")
@@ -46,6 +59,16 @@ def load_map(folder, exp, mode, comp, res, rot):
 
 
 def limit(data, pct, symmetric):
+    """Colour limit of a map from a percentile.
+
+    Args:
+        data: Map.
+        pct: Percentile.
+        symmetric: True to use absolute values.
+
+    Returns:
+        Limit (at least 1e-9).
+    """
     finite = data[np.isfinite(data)]
     if finite.size == 0:
         return 1e-9
@@ -54,6 +77,19 @@ def limit(data, pct, symmetric):
 
 
 def draw(ax, fig, data, cmap, norm, title, cbar_label, letter, loss):
+    """Draws a map panel with colour bar and letter.
+
+    Args:
+        ax: Axes.
+        fig: Figure.
+        data: Map.
+        cmap: Colour map.
+        norm: Normalisation.
+        title: Title.
+        cbar_label: Colour bar label.
+        letter: Panel letter.
+        loss: True for error maps.
+    """
     cmap = cmap.copy()
     cmap.set_bad((0, 0, 0, 1))  # ausserhalb der Probe / maskiert: schwarz
     im = ax.imshow(data, cmap=cmap, norm=norm, interpolation="nearest")
@@ -69,6 +105,19 @@ def draw(ax, fig, data, cmap, norm, title, cbar_label, letter, loss):
 
 
 def plot_component(axes_row_pair, fig, folder, exp, comp, res, rot, pct, letters):
+    """Draws the four panels (value, reference, errors) of one component.
+
+    Args:
+        axes_row_pair: Two rows of axes.
+        fig: Figure.
+        folder: Folder of the maps.
+        exp: Experiment.
+        comp: Component.
+        res: Resolution.
+        rot: Rotations.
+        pct: Percentile of the colour limit.
+        letters: Panel letters.
+    """
     maps = {m: load_map(folder, exp, m, comp, res, rot) for m, _, _ in PANELS}
     lim = max(limit(maps["value"], pct, True), limit(maps["value_ref"], pct, True))
     flow_norm = mpl.colors.TwoSlopeNorm(vmin=-lim, vcenter=0.0, vmax=lim)
@@ -85,6 +134,12 @@ def plot_component(axes_row_pair, fig, folder, exp, comp, res, rot, pct, letters
 
 
 def save(fig, out_base):
+    """Saves the figure as PNG (300 dpi) and PDF.
+
+    Args:
+        fig: Figure.
+        out_base: Path without extension.
+    """
     fig.savefig(out_base + ".png", dpi=300)
     fig.savefig(out_base + ".pdf")
     plt.close(fig)
@@ -92,6 +147,7 @@ def save(fig, out_base):
 
 
 def main():
+    """Command line: accuracy figure of the flow (value, reference, errors) from the maps exported by Unity."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

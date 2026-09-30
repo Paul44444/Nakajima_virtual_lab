@@ -10,6 +10,9 @@ public class Intensity_plus : MonoBehaviour
     public Transform canvas;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -19,11 +22,17 @@ public class Intensity_plus : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Doubles the display scale of the reference maps.
+    /// </summary>
     void plus()
     {
         float scale = vis.get_truth_map_scale();

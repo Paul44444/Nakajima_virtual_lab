@@ -18,6 +18,13 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
     int shown_res = -1;
     bool dragging = false;
 
+    /// <summary>
+    /// Creates the render-resolution slider (64 to 2048 px in steps of 32) with its label under a parent transform.
+    /// </summary>
+    /// <param name="canvas">Parent transform of the slider panel.</param>
+    /// <param name="font">Font of the label.</param>
+    /// <param name="position">Anchored position (anchor top right of the parent).</param>
+    /// <returns>The slider component.</returns>
     public static ResolutionSlider Create(Transform canvas, Font font, Vector2 position)
     {
         GameObject root = new GameObject("resolution_slider_panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -71,6 +78,10 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
         return rs;
     }
 
+    /// <summary>
+    /// Returns the lab controller (cached after the first lookup).
+    /// </summary>
+    /// <returns>The vis_3D component or null.</returns>
     vis_3D Vis()
     {
         if (vis == null)
@@ -81,12 +92,20 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
         return vis;
     }
 
+    /// <summary>
+    /// Updates the label while the slider is dragged; the resolution is applied on release.
+    /// </summary>
+    /// <param name="res">Resolution under the handle in pixels.</param>
     void OnDrag(int res)
     {
         dragging = true;
         label.text = "r" + res;
     }
 
+    /// <summary>
+    /// Applies the dragged resolution when the mouse button is released.
+    /// </summary>
+    /// <param name="eventData">Pointer event data (unused).</param>
     public void OnPointerUp(PointerEventData eventData)
     {
         if (!dragging)
@@ -95,6 +114,10 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
         Apply((int)slider.value * STEP);
     }
 
+    /// <summary>
+    /// Sets the render resolution of the lab and refreshes the cameras; refused while an analysis is running.
+    /// </summary>
+    /// <param name="res">New resolution in pixels.</param>
     void Apply(int res)
     {
         vis_3D v = Vis();
@@ -119,6 +142,10 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
             + (res > 1024 ? "\nHinweis: Masken/Ground Truth laufen auf der CPU und brauchen bei grossen Bildern deutlich laenger." : ""));
     }
 
+    /// <summary>
+    /// Shows a resolution on the slider and label without triggering its listener.
+    /// </summary>
+    /// <param name="res">Resolution in pixels.</param>
     void ShowRes(int res)
     {
         shown_res = res;
@@ -128,6 +155,10 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
     }
 
     // alte Toggles im res_panel an die Aufloesung angleichen (ohne deren Listener auszuloesen)
+    /// <summary>
+    /// Sets the legacy resolution toggles of the scene to match the resolution (without triggering their listeners).
+    /// </summary>
+    /// <param name="res">Resolution in pixels.</param>
     static void SyncToggles(int res)
     {
         GameObject canvas = GameObject.Find("Canvas");
@@ -143,6 +174,9 @@ public class ResolutionSlider : MonoBehaviour, IPointerUpHandler
         }
     }
 
+    /// <summary>
+    /// Unity callback: follows resolution changes made elsewhere (legacy toggles, saved settings).
+    /// </summary>
     void Update()
     {
         // Aenderungen von aussen (Toggles, PlayerPrefs beim Start) uebernehmen

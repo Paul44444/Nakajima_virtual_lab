@@ -10,6 +10,9 @@ public class Start_script : MonoBehaviour
     public Transform toggle;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler of the Start button.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -22,11 +25,17 @@ public class Start_script : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Starts the standard analysis (rendering and/or optical flow according to with_exp and with_tv).
+    /// </summary>
     void on_click()
     {
         //vis.set_with_exp(toggle_l.isOn);

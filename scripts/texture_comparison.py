@@ -30,6 +30,14 @@ def box(a, r):
 
 
 def otsu(v):
+    """Otsu threshold of values.
+
+    Args:
+        v: Values.
+
+    Returns:
+        Threshold.
+    """
     h, e = np.histogram(v, 256)
     p = h / h.sum()
     w = np.cumsum(p)
@@ -84,6 +92,16 @@ def specimen_mask(img, fine=2, win=20, down=4, open_r=10):
     L = np.array([np.argmax(r) if r.any() else np.nan for r in m], float)
     R = np.array([W - 1 - np.argmax(r[::-1]) if r.any() else np.nan for r in m], float)
     def robust_fit(v, deg=6, it=8):
+        """Robust polynomial fit over the image rows (outliers removed with MAD).
+
+        Args:
+            v: Values per row.
+            deg: Degree.
+            it: Iterations.
+
+        Returns:
+            Fitted values.
+        """
         y = np.arange(H, dtype=float)
         ok = np.isfinite(v)
         for _ in range(it):
@@ -110,6 +128,16 @@ def waist(mask):
 
 
 def render_image(project, exp, res=RES):
+    """Loads a rendered image of an experiment (rotated like the manuscript).
+
+    Args:
+        project: Project folder.
+        exp: Experiment.
+        res: Resolution.
+
+    Returns:
+        Gray values.
+    """
     p = os.path.join(project, "Assets" + exp.replace(".", ""), "cam_0", "uv", "im_1_r%d.png" % res)
     a = np.asarray(Image.open(p).convert("L")).astype(float)
     return np.rot90(a)  # wie die Manuskriptabbildungen: Stempel links/rechts (wie im Foto)
@@ -149,6 +177,15 @@ def stats(roi):
     b = roi < t
 
     def chords(bb, val):
+        """Lengths of runs of a value along rows and columns.
+
+        Args:
+            bb: Binary image.
+            val: Value.
+
+        Returns:
+            Run lengths.
+        """
         lens = []
         for line in list(bb) + list(bb.T):
             run = 0
@@ -183,6 +220,7 @@ def ks(a, b):
 
 
 def main():
+    """Command line: compares the speckle texture of photo and rendering."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt

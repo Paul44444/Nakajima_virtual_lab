@@ -16,6 +16,9 @@ public class Previous_im : MonoBehaviour
     Sprite im1 = null;
     
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the preview panels and the navigation buttons.
+    /// </summary>
     void Start()
     {
         selfparent = gameObject.transform.parent;
@@ -31,11 +34,17 @@ public class Previous_im : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Shows the first image of the pair in the preview.
+    /// </summary>
     public void click_previous()
     {
         if (im1 == null)
@@ -49,6 +58,9 @@ public class Previous_im : MonoBehaviour
         
         im1panel.GetComponent<Image>().sprite = im0;
     }
+    /// <summary>
+    /// Shows the second image of the pair in the preview.
+    /// </summary>
     public void click_next()
     {
         if (im1 == null)

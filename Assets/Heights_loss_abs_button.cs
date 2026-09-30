@@ -9,6 +9,9 @@ public class Heights_loss_abs_button : MonoBehaviour
     public vis_3D vis;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -17,11 +20,17 @@ public class Heights_loss_abs_button : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
 
+    /// <summary>
+    /// Shows the absolute depth error on the height display.
+    /// </summary>
     void on_click()
     {
         vis.set_heights_mode("loss_abs");

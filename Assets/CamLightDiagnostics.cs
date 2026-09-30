@@ -14,6 +14,9 @@ public class CamLightDiagnostics : MonoBehaviour
     private float lastSummaryTime = -999f;
     private string lastSummary = "";
 
+    /// <summary>
+    /// Creates the diagnostics object once at start-up (persistent across scene loads).
+    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Install()
     {
@@ -25,26 +28,51 @@ public class CamLightDiagnostics : MonoBehaviour
         Debug.Log("CamLightDiagnostics installed.");
     }
 
+    /// <summary>
+    /// Checks whether all components of a vector are finite.
+    /// </summary>
+    /// <param name="v">Vector to check.</param>
+    /// <returns>True if no component is NaN or infinite.</returns>
     private static bool Finite(Vector3 v)
     {
         return float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
     }
 
+    /// <summary>
+    /// Checks whether all components of a quaternion are finite.
+    /// </summary>
+    /// <param name="q">Quaternion to check.</param>
+    /// <returns>True if no component is NaN or infinite.</returns>
     private static bool Finite(Quaternion q)
     {
         return float.IsFinite(q.x) && float.IsFinite(q.y) && float.IsFinite(q.z) && float.IsFinite(q.w);
     }
 
+    /// <summary>
+    /// Formats a float with six significant digits (invariant culture).
+    /// </summary>
+    /// <param name="v">Value to format.</param>
+    /// <returns>Formatted string.</returns>
     private static string F(float v)
     {
         return v.ToString("G6", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Formats a vector as (x, y, z).
+    /// </summary>
+    /// <param name="v">Vector to format.</param>
+    /// <returns>Formatted string.</returns>
     private static string V(Vector3 v)
     {
         return "(" + F(v.x) + ", " + F(v.y) + ", " + F(v.z) + ")";
     }
 
+    /// <summary>
+    /// Builds the hierarchy path of a transform (parent/child/...).
+    /// </summary>
+    /// <param name="t">Transform whose path is built.</param>
+    /// <returns>Slash-separated path from the root.</returns>
     private static string Path(Transform t)
     {
         string path = t.name;
@@ -56,6 +84,11 @@ public class CamLightDiagnostics : MonoBehaviour
         return path;
     }
 
+    /// <summary>
+    /// Limits log output to one message per object and second.
+    /// </summary>
+    /// <param name="o">Object that would be logged.</param>
+    /// <returns>True if a message for this object was logged less than one second ago.</returns>
     private bool Throttled(Object o)
     {
         int id = o.GetHashCode();
@@ -66,6 +99,9 @@ public class CamLightDiagnostics : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Unity callback: checks all cameras and lights for degenerate transforms or projection matrices and logs the offending objects (read-only).
+    /// </summary>
     private void LateUpdate()
     {
         StringBuilder summary = new StringBuilder();

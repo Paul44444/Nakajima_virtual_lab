@@ -42,6 +42,14 @@ def read_parts(path):
 
 
 def convert(path):
+    """Converts an STL file of the sample into vertex text lines.
+
+    Args:
+        path: STL file.
+
+    Returns:
+        Lines.
+    """
     verts = read_parts(path)
     missing = [p for p in PARTS if not verts[p]]
     if missing:
@@ -55,6 +63,7 @@ def convert(path):
 
 
 def main():
+    """Command line: converts STL files to verts_*.txt for Unity."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

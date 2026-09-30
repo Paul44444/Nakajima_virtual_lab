@@ -24,6 +24,9 @@ public class Design_Exp_Button : MonoBehaviour
     Design_Exp_Button designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the experiment-design panel (initially hidden) and the other panels, registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -46,11 +49,17 @@ public class Design_Exp_Button : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ;
     }
 
+    /// <summary>
+    /// Toggles the experiment-design panel and closes the analysis and switch panels.
+    /// </summary>
     public void on_click()
     {
         analyzer.close_my();
@@ -58,6 +67,9 @@ public class Design_Exp_Button : MonoBehaviour
         design_exp_panel.gameObject.SetActive(!design_exp_panel.gameObject.activeSelf);
     }
 
+    /// <summary>
+    /// Hides the experiment-design panel.
+    /// </summary>
     public void close_my()
     {
         design_exp_panel.gameObject.SetActive(false);

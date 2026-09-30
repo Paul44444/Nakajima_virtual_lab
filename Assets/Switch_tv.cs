@@ -10,6 +10,9 @@ public class Switch_tv : MonoBehaviour
     public Transform toggle;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the handler of the with_tv toggle.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -20,11 +23,18 @@ public class Switch_tv : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Enables or disables the optical-flow computation in the standard analysis (with_tv).
+    /// </summary>
+    /// <param name="toggle_l">The with_tv toggle.</param>
     void on_click(Toggle toggle_l)
     {
         vis.set_with_main(toggle_l.isOn);

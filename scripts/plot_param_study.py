@@ -29,10 +29,26 @@ GROUPS = [  # (Gruppe in der TSV, Spalte mit dem Wert, Achsenbeschriftung, log-A
 
 
 def reg_label(r):
+    """Label of the regularisation of a row.
+
+    Args:
+        r: Row.
+
+    Returns:
+        Text.
+    """
     return "TV" if r["regularization"] == "TV" else r"TGV $\alpha_0/\alpha_1$=%g" % fnum(r["tgv_ratio"])
 
 
 def fnum(s):
+    """Converts to float (NaN on error).
+
+    Args:
+        s: Value.
+
+    Returns:
+        Number.
+    """
     try:
         return float(s)
     except (TypeError, ValueError):
@@ -50,6 +66,14 @@ def save(fig, base, dpi):
 
 
 def read(tsv):
+    """Reads the TSV of the parameter study.
+
+    Args:
+        tsv: File.
+
+    Returns:
+        Tuple (comment lines, rows).
+    """
     comments, rows = [], []
     with open(tsv, encoding="utf-8", errors="replace") as fh:
         lines = [l for l in fh if l.strip()]
@@ -61,6 +85,15 @@ def read(tsv):
 
 
 def basis_value(rows, col):
+    """Value of a column in the base run.
+
+    Args:
+        rows: Rows.
+        col: Column.
+
+    Returns:
+        Value, or None.
+    """
     for r in rows:
         if r["group"] == "basis":
             return fnum(r[col]) if col else None
@@ -68,6 +101,19 @@ def basis_value(rows, col):
 
 
 def draw_group(axes, rows, group, col, xlabel, logx):
+    """Draws error, strain error, and run time over the parameter of one group.
+
+    Args:
+        axes: Three axes.
+        rows: Rows.
+        group: Group name.
+        col: Parameter column.
+        xlabel: x label.
+        logx: True for a logarithmic x axis.
+
+    Returns:
+        False if the group has no data.
+    """
     sel = [r for r in rows if r["group"] == group]
     if not sel:
         for ax in axes:
@@ -96,6 +142,15 @@ def draw_group(axes, rows, group, col, xlabel, logx):
         labels = None
 
     def series(key, scale=1.0):
+        """Values of a column for the selected rows.
+
+        Args:
+            key: Column.
+            scale: Factor.
+
+        Returns:
+            Values.
+        """
         return [scale * fnum(r[key]) for r in sel]
 
     specs = [
@@ -142,6 +197,12 @@ PAPER_YLABEL = {"Fluss-MAE [px]": "displacement MAE [px]", "rel. Dehnungsfehler 
 
 
 def main_paper(tsv, out_png):
+    """Overview figure of the parameter study for the paper.
+
+    Args:
+        tsv: File.
+        out_png: Output image.
+    """
     comments, rows = read(tsv)
     present = [g for g in GROUPS if g[0] in PAPER_XLABEL and any(r["group"] == g[0] for r in rows)]
     fig, axes = plt.subplots(len(present), 3, figsize=(12, 2.75 * len(present)), squeeze=False)
@@ -156,6 +217,7 @@ def main_paper(tsv, out_png):
 
 
 def main():
+    """Command line: diagrams of the parameter study (or --paper tsv png)."""
     if len(sys.argv) > 1 and sys.argv[1] == "--paper":
         return main_paper(sys.argv[2], sys.argv[3])
     here = os.path.dirname(os.path.abspath(__file__))

@@ -10,6 +10,9 @@ public class Switch_exp : MonoBehaviour
     public Transform toggle;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the handler of the with_exp toggle.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -20,10 +23,17 @@ public class Switch_exp : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ;
     }
+    /// <summary>
+    /// Enables or disables rendering of the camera images in the standard analysis (with_exp).
+    /// </summary>
+    /// <param name="toggle_l">The with_exp toggle.</param>
     void on_click(Toggle toggle_l)
     {
         vis.set_with_exp(toggle_l.isOn);

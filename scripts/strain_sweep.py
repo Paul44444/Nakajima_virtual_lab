@@ -17,6 +17,14 @@ import numpy as np
 
 
 def load_raw(path):
+    """Reads a raw .f32 map (checks the magic number).
+
+    Args:
+        path: File.
+
+    Returns:
+        Map m[i][j].
+    """
     raw = open(path, "rb").read()
     magic, n, m = struct.unpack("<iii", raw[:12])
     if magic != 0x57415246:
@@ -36,6 +44,15 @@ def gauss_nan(a, s):
     wgt = ok.astype(np.float64)
 
     def conv(x, axis):
+        """1D convolution with the Gaussian kernel along one axis (zero padding).
+
+        Args:
+            x: Array.
+            axis: Axis.
+
+        Returns:
+            Convolved array.
+        """
         pad = [(0, 0), (0, 0)]
         pad[axis] = (r, r)
         xp = np.pad(x, pad)
@@ -54,6 +71,15 @@ def gauss_nan(a, s):
 
 
 def strain(a, axis):
+    """Strain by central difference (as in strain_maps).
+
+    Args:
+        a: Displacement map.
+        axis: 0 = x, 1 = y.
+
+    Returns:
+        Strain map.
+    """
     # m[i][j]: i = x (Achse 0), j = y (Achse 1); zentrale Differenz wie strain_maps
     d = np.full_like(a, np.nan)
     if axis == 0:
@@ -64,6 +90,16 @@ def strain(a, axis):
 
 
 def metrics(e, g, pad=30):
+    """Error metrics of a strain map against the reference (inner area).
+
+    Args:
+        e: Strain map.
+        g: Reference.
+        pad: Border width.
+
+    Returns:
+        Dict (n, corr, mae, rmse, rel_mae, gt_mean).
+    """
     n, m = e.shape
     sl = (slice(pad, n - pad), slice(pad, m - pad))
     e, g = e[sl], g[sl]
@@ -75,6 +111,7 @@ def metrics(e, g, pad=30):
 
 
 def main():
+    """Command line: strain error over the smoothing sigma."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

@@ -15,6 +15,9 @@ public class T_control_script : MonoBehaviour
     Transform t_panel;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers this control at the lab controller and wires the forward/back buttons.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -32,6 +35,9 @@ public class T_control_script : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback: the keys A and D step backwards and forwards in time.
+    /// </summary>
     void Update()
     {
         if (Input.GetKeyDown("a"))
@@ -52,6 +58,10 @@ public class T_control_script : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Shows the current time index in the label.
+    /// </summary>
+    /// <param name="t_idx">Time index to display.</param>
     public void refresh_t_panel(int t_idx)
     {
         Transform t_label = t_panel.Find("t_label");
@@ -59,6 +69,9 @@ public class T_control_script : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Shows the next time step and refreshes the view.
+    /// </summary>
     public void forward_action()
     {
         int t_idx_now = vis.get_t_idx();
@@ -66,6 +79,9 @@ public class T_control_script : MonoBehaviour
         vis.refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Shows the previous time step and refreshes the view.
+    /// </summary>
     public void back_action()
     {
         int t_idx_now = vis.get_t_idx();

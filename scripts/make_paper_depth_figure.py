@@ -33,6 +33,14 @@ CMAP_DEPTH = LinearSegmentedColormap.from_list("depth", [(0, 0, 0), (0.55, 0, 0)
 
 
 def load(path):
+    """Reads a raw depth map and orients it like the manuscript figures (env DEPTH_ROT, DEPTH_FLIPLR, DEPTH_FLIPUD).
+
+    Args:
+        path: File.
+
+    Returns:
+        Map.
+    """
     raw = open(path, "rb").read()
     _, n, m = struct.unpack("<iii", raw[:12])
     a = np.frombuffer(raw, dtype="<f4", offset=12).reshape(n, m).astype(float).T
@@ -45,6 +53,7 @@ def load(path):
 
 
 def main():
+    """Creates the depth figure of the paper (arguments: tsv, folder, resolution, output)."""
     tsv, good, res, out = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
     tv = load(os.path.join(good, "depth_tv_r%s.f32" % res))
     ref = load(os.path.join(good, "depth_ref_r%s.f32" % res))

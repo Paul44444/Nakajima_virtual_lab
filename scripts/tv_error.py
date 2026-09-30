@@ -25,10 +25,26 @@ from PIL import Image
 
 
 def to_float(text):
+    """Converts text to float (comma allowed).
+
+    Args:
+        text: Text.
+
+    Returns:
+        Number.
+    """
     return float(text.strip().replace(",", "."))
 
 
 def read_params(path):
+    """Reads minimum and maximum from a params file.
+
+    Args:
+        path: File.
+
+    Returns:
+        Tuple (min, max).
+    """
     with open(path, encoding="utf-8", errors="replace") as f:
         cells = f.read().strip().split("\t")
     return to_float(cells[6]), to_float(cells[7])  # min, max
@@ -52,6 +68,17 @@ def load_map(png):
 
 
 def compare(folder, exp, strain, variant):
+    """Error of the TV map against the reference of an experiment.
+
+    Args:
+        folder: Folder.
+        exp: Experiment.
+        strain: Strain mode.
+        variant: Suffix (component, resolution).
+
+    Returns:
+        Metrics, or None.
+    """
     tv = os.path.join(folder, "im_%s_uv_%s_value%s.png" % (exp, strain, variant))
     gt = os.path.join(folder, "im_%s_uv_%s_value_ref%s.png" % (exp, strain, variant))
     if not (os.path.exists(tv) and os.path.exists(gt)):
@@ -78,6 +105,7 @@ def compare(folder, exp, strain, variant):
 
 
 def main():
+    """Command line: TV error statistics of the exported maps."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

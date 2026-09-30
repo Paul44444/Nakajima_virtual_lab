@@ -31,6 +31,14 @@ STRAIN_BOX = (0, 1530, 1160, 2400)   # ersetzter Bereich (x0, y0, x1, y1); 1480-
 
 
 def fnum(s):
+    """Converts to float (NaN on error).
+
+    Args:
+        s: Value.
+
+    Returns:
+        Number.
+    """
     try:
         return float(s)
     except (TypeError, ValueError):
@@ -38,6 +46,14 @@ def fnum(s):
 
 
 def read_rows(tsv):
+    """Reads the rows of the lighting sweep, sorted by illumination factor.
+
+    Args:
+        tsv: Sweep TSV.
+
+    Returns:
+        Rows as dicts.
+    """
     with open(tsv, encoding="utf-8-sig") as fh:
         rows = list(csv.DictReader([l for l in fh if l.strip() and not l.startswith("#")], delimiter="\t"))
     rows = [r for r in rows if fnum(r.get("lighting_intensity")) > 0]
@@ -89,6 +105,28 @@ def trend(ax, x, y, top):
 
 def panel(fig_w, fig_h, axbox, x, y, yerr, top, title, capsize, plateau_limit, label, label_xy, xlabel="Light intensity",
           groups=None, group_labels=None):
+    """Draws one error diagram (points with error bars, plateau shaded) as a separate figure.
+
+    Args:
+        fig_w: Width in pixels.
+        fig_h: Height in pixels.
+        axbox: Axes box (x0, x1, y0, y1) in pixels.
+        x: Parameter values.
+        y: Errors.
+        yerr: Error bars.
+        top: Upper y limit.
+        title: Title.
+        capsize: Size of the bar caps.
+        plateau_limit: Threshold of the plateau.
+        label: y label.
+        label_xy: Label position.
+        xlabel: x label.
+        groups: Series index per point (optional).
+        group_labels: Names of the series.
+
+    Returns:
+        Figure.
+    """
     fig = plt.figure(figsize=(fig_w / DPI, fig_h / DPI), dpi=DPI)
     x0, x1, y0, y1 = axbox
     ax = fig.add_axes([x0 / fig_w, 1 - y1 / fig_h, (x1 - x0) / fig_w, (y1 - y0) / fig_h])
@@ -138,6 +176,17 @@ def gaussian_nan(a, sigma):
 
 
 def load_raw(folder, what, comp, res):
+    """Reads a raw accuracy map (border set to NaN).
+
+    Args:
+        folder: Folder.
+        what: value or value_ref.
+        comp: Component.
+        res: Resolution.
+
+    Returns:
+        Map m[i][j] (i = x, j = y).
+    """
     import struct
     raw = open(os.path.join(folder, "accuracy_raw_%s_%s_r%s.f32" % (what, comp, res)), "rb").read()
     _, n, m = struct.unpack("<iii", raw[:12])
@@ -187,6 +236,14 @@ def strain_top(raw_dir, res, sigma, W, H):
 
 
 def to_image(fig):
+    """Converts a figure to a PIL image and closes it.
+
+    Args:
+        fig: Figure.
+
+    Returns:
+        RGB image.
+    """
     fig.canvas.draw()
     img = Image.frombuffer("RGBA", fig.canvas.get_width_height(), fig.canvas.buffer_rgba()).convert("RGB")
     plt.close(fig)
@@ -194,6 +251,7 @@ def to_image(fig):
 
 
 def main():
+    """Creates the lighting figures of the paper (arguments: sweep TSV, output)."""
     tsv, out = sys.argv[1], sys.argv[2]
     rows = read_rows(tsv)
     x = [fnum(r["lighting_intensity"]) for r in rows]

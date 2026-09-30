@@ -28,6 +28,16 @@ CMAP_ERR = LinearSegmentedColormap.from_list("err", [(0, 0, 0), (0.55, 0, 0), (1
 
 
 def load(folder, what, res):
+    """Reads a raw accuracy map (border set to NaN) in manuscript orientation.
+
+    Args:
+        folder: Folder.
+        what: value or value_ref.
+        res: Resolution.
+
+    Returns:
+        Map.
+    """
     raw = open(os.path.join(folder, "accuracy_raw_%s_%s_r%s.f32" % (what, COMP, res)), "rb").read()
     _, n, m = struct.unpack("<iii", raw[:12])
     a = np.frombuffer(raw, dtype="<f4", offset=12).reshape(n, m).astype(float)
@@ -36,6 +46,25 @@ def load(folder, what, res):
 
 
 def show(fig, ax, img, title, label, cmap, letter, vmin=None, vmax=None, norm=None, ticks=None, fmt=None):
+    """Draws a map panel with colour bar and letter.
+
+    Args:
+        fig: Figure.
+        ax: Axes.
+        img: Map.
+        title: Title.
+        label: Colour bar label.
+        cmap: Colour map.
+        letter: Panel letter.
+        vmin: Lower limit.
+        vmax: Upper limit.
+        norm: Normalisation (replaces vmin/vmax).
+        ticks: Colour bar ticks.
+        fmt: Tick format.
+
+    Returns:
+        Image handle.
+    """
     cm = cmap.copy()
     cm.set_bad((0, 0, 0, 1))
     im = ax.imshow(img, cmap=cm, vmin=None if norm else vmin, vmax=None if norm else vmax, norm=norm,
@@ -72,6 +101,7 @@ def append_old_lighting(out, old_png, cut=1790):
 
 
 def main():
+    """Creates the flow figure of the paper (value, reference, absolute and relative error; optional extra row)."""
     good, res, out = sys.argv[1], sys.argv[2], sys.argv[3]
     extra = sys.argv[4:8]
     val, ref = load(good, "value", res), load(good, "value_ref", res)

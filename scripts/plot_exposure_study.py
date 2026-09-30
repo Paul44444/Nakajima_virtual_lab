@@ -16,6 +16,14 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 
 def fnum(s):
+    """Converts to float (NaN on error).
+
+    Args:
+        s: Value.
+
+    Returns:
+        Number.
+    """
     try:
         return float(s)
     except (TypeError, ValueError):
@@ -23,6 +31,7 @@ def fnum(s):
 
 
 def main():
+    """Command line: diagrams of the exposure study (arguments: TSV, output folder)."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     tsv = sys.argv[1] if len(sys.argv) > 1 else os.path.join(project, "Assets", "analysis_results", "exposure_study_latest.tsv")
@@ -73,6 +82,14 @@ def main():
 
 
 def load_raw(path):
+    """Reads a raw accuracy map (border set to NaN).
+
+    Args:
+        path: File.
+
+    Returns:
+        Array image[row][column].
+    """
     import struct
     import numpy as np
     raw = open(path, "rb").read()

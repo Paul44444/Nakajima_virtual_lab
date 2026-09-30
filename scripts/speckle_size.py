@@ -44,6 +44,7 @@ def measure(folder, res, frame=1, cam=0, crop=CROP):
 
 
 def main():
+    """Command line: prints the measured speckle size per folder."""
     res = sys.argv[1]
     for folder in sys.argv[2:]:
         print("%s\t%.3f" % (folder, measure(folder, res)))

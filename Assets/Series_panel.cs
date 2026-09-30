@@ -13,17 +13,26 @@ public class Series_panel : MonoBehaviour
     // info (paul): evaluate as an image series
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback (unused; initialisation happens in do_start).
+    /// </summary>
     void Start()
     {
 
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
 
+    /// <summary>
+    /// Initialises the image-series panel with the default input and output folders.
+    /// </summary>
     public void do_start()
     {
         sphere = GameObject.Find("sphere");

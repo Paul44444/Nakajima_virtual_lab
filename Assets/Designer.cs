@@ -15,11 +15,17 @@ public class Designer : MonoBehaviour
     Transform designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback (unused; initialisation happens in do_start).
+    /// </summary>
     void Start()
     {
         ;
     }
 
+    /// <summary>
+    /// Initialises the experiment-design panel with the current camera and light configuration.
+    /// </summary>
     public void do_start()
     {   
         sphere = GameObject.Find("sphere");
@@ -72,6 +78,9 @@ public class Designer : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         

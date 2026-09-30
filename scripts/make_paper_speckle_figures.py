@@ -29,6 +29,14 @@ FIGS = {
 
 
 def rows_of(path):
+    """Reads a TSV file as rows.
+
+    Args:
+        path: File.
+
+    Returns:
+        Rows as dicts.
+    """
     with open(path, encoding="utf-8-sig") as fh:
         return list(csv.DictReader([l for l in fh if l.strip()], delimiter="\t"))
 
@@ -61,6 +69,15 @@ def texture_scale(rows, project):
 
 
 def tex_fwhm(path, n=1024):
+    """FWHM of the autocorrelation of a texture (speckle size in texture pixels).
+
+    Args:
+        path: Texture file.
+        n: Evaluated size in pixels.
+
+    Returns:
+        FWHM.
+    """
     import numpy as np
     from speckle_size import fwhm_1d
     a = np.asarray(Image.open(path).convert("L")).astype(float)[:n, :n]
@@ -88,6 +105,7 @@ def material_texture(project, size_label):
 
 
 def main():
+    """Creates the speckle figures of the paper (procedural textures and pattern materials; env SPECKLE_SERIES)."""
     sweep, depth_tsv, project, out = sys.argv[1:5]
     all_rows = rows_of(sweep)
     # 29092026 Standard: beide Serien - prozedurale Texturen (kleine Speckles, nominaler Durchmesser = Skala * s) und

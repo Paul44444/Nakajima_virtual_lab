@@ -14,6 +14,9 @@ public class U_V : MonoBehaviour
     Transform t_panel;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers this control at the lab controller and wires the forward/back buttons.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -29,12 +32,19 @@ public class U_V : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ; ;
         ;
     }
 
+    /// <summary>
+    /// Shows the displayed component (u, v, or z) in the label.
+    /// </summary>
+    /// <param name="u_v_mode">Component to display.</param>
     public void refresh_info(string u_v_mode)
     {
         Transform t_label = t_panel.Find("t_label");
@@ -42,6 +52,9 @@ public class U_V : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Cycles the displayed component forwards (u, v, z) and refreshes the view.
+    /// </summary>
     public void forward_action()
     {
         string u_v_mode_now = vis.get_u_v_mode();
@@ -66,6 +79,9 @@ public class U_V : MonoBehaviour
         vis.refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Cycles the displayed component backwards and refreshes the view.
+    /// </summary>
     public void back_action()
     {
         //forward_action();

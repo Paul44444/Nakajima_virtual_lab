@@ -12,6 +12,9 @@ public class Delete_chosen : MonoBehaviour
     string file_path;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the lab controller and the file explorer and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -26,11 +29,17 @@ public class Delete_chosen : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Removes the selected file from the list of image files and refreshes the list.
+    /// </summary>
     public void on_click()
     {
         // info (paul): remove box

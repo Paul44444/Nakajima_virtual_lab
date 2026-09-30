@@ -22,6 +22,14 @@ PLATEAU_FACTOR = 2.0
 
 
 def fnum(s):
+    """Converts to float (NaN on error).
+
+    Args:
+        s: Value.
+
+    Returns:
+        Number.
+    """
     try:
         return float(s)
     except (TypeError, ValueError):
@@ -29,6 +37,14 @@ def fnum(s):
 
 
 def read_tsv(path):
+    """Reads a sweep TSV.
+
+    Args:
+        path: File.
+
+    Returns:
+        Tuple (rows, comment lines).
+    """
     with open(path, encoding="utf-8-sig", errors="replace") as fh:
         lines = [l for l in fh if l.strip()]
     comments = [l[1:].strip() for l in lines if l.startswith("#")]
@@ -36,6 +52,14 @@ def read_tsv(path):
 
 
 def lighting_value(label):
+    """Illumination factor from a label (lighting_01 = 0.1).
+
+    Args:
+        label: Label.
+
+    Returns:
+        Factor.
+    """
     # Labels aus start_lighting_sweep: lighting_01 = 0.1, lighting_1 = 1, lighting_8 = 8
     s = label.replace("lighting_", "")
     if len(s) > 1 and s.startswith("0") and "." not in s:
@@ -60,6 +84,20 @@ def plateau(xs, ys):
 
 
 def curve(ax, xs, ys, label, marker="o", color=None, shade=True):
+    """Draws a sweep curve with shaded plateau.
+
+    Args:
+        ax: Axes.
+        xs: Parameter values.
+        ys: Errors.
+        label: Legend label.
+        marker: Marker.
+        color: Colour.
+        shade: True to shade the plateau.
+
+    Returns:
+        False if no data.
+    """
     pts = sorted((x, y) for x, y in zip(xs, ys) if not (math.isnan(x) or math.isnan(y)))
     if not pts:
         return False
@@ -119,6 +157,7 @@ def paper_figure(analysis, xs, rows, out):
 
 
 def main():
+    """Command line: sweep diagram (arguments: analysis, tsv, output, optional resolution and exposure TSV)."""
     analysis, tsv, out = sys.argv[1], sys.argv[2], sys.argv[3]
     res = fnum(sys.argv[4]) if len(sys.argv) > 4 else float("nan")
     exposure_tsv = sys.argv[5] if len(sys.argv) > 5 else None

@@ -8,17 +8,26 @@ using UnityEngine.UI;
 public class Explorer_paul : MonoBehaviour
 {
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Start()
     {
         //set_up_files();
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
 
+    /// <summary>
+    /// Fills the file explorer from the default image folder (legacy path).
+    /// </summary>
     public void set_up_files()
     {
         //04062025 string path = "C:/Users/go73jem/Desktop/DIC_package/exp_normal/time_flow_v/play_5";
@@ -27,6 +36,10 @@ public class Explorer_paul : MonoBehaviour
         set_up_files_for_path(path);
     }
 
+    /// <summary>
+    /// Fills the file explorer with the files of a folder.
+    /// </summary>
+    /// <param name="path">Folder to list.</param>
     public void set_up_files_for_path(string path)
     {
         bool exists = File.Exists(path);
@@ -48,6 +61,11 @@ public class Explorer_paul : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Adds one file entry (prefab save_block) to the list of the file explorer.
+    /// </summary>
+    /// <param name="file_path">Full path of the file.</param>
+    /// <param name="file_name">Displayed name.</param>
     public void add_entry_with_name(string file_path, string file_name)
     {
         GameObject block_template = Resources.Load("save_block") as GameObject;

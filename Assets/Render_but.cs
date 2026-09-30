@@ -15,6 +15,9 @@ public class Render_but : MonoBehaviour
     public Transform designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the experiment-design panel and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -27,11 +30,17 @@ public class Render_but : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Renders the two camera images of the current experiment configuration and shows them with their ground-truth maps in the preview panels.
+    /// </summary>
     public void on_click()
     {
         string save_path_1 = vis.path_dic + "test_im_july_1.png";
@@ -100,6 +109,13 @@ public class Render_but : MonoBehaviour
         //A im_1_panel.GetComponent<UnityEngine.UI.Image>().material = mat1;
     }
 
+    /// <summary>
+    /// Loads an image file into a texture and assigns it to a preview panel.
+    /// </summary>
+    /// <param name="im_1_panel">Preview panel that receives the image.</param>
+    /// <param name="save_path">Path of the image file.</param>
+    /// <param name="input">Texture to fill (created if null).</param>
+    /// <returns>The panel that shows the image.</returns>
     public Transform display_from_path(Transform im_1_panel, string save_path, Texture2D input)
     {
         // info (paul): assign to images to panels

@@ -18,6 +18,9 @@ public class Confirm_dirs_but : MonoBehaviour
     public Transform choose_panel;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the panels and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -34,16 +37,25 @@ public class Confirm_dirs_but : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
 
+    /// <summary>
+    /// Click handler: reads the input and output folders of the image-series panel.
+    /// </summary>
     public void on_click()
     {
         collect_vals();
     }
 
+    /// <summary>
+    /// Reads the input and output folders of the image-series panel (with defaults if empty) and starts the evaluation of the image series.
+    /// </summary>
     public void collect_vals()
     {
         // info (paul): set save path:

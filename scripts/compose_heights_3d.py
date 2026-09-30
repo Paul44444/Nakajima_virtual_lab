@@ -21,6 +21,15 @@ OLD_LETTERS = ((277, 151), (1607, 151), (122, 988), (1442, 988))
 
 
 def trim(img, pad=20):
+    """Crops the white border of an image.
+
+    Args:
+        img: PIL image.
+        pad: Remaining margin in pixels.
+
+    Returns:
+        Cropped image.
+    """
     a = np.asarray(img.convert("L"))
     ys, xs = np.where(a < 250)
     return img.crop((max(xs.min() - pad, 0), max(ys.min() - pad, 0),
@@ -28,6 +37,7 @@ def trim(img, pad=20):
 
 
 def main():
+    """Puts the 3D plot centred above the height-map figure (arguments: base image, top image, output)."""
     base_p, top_p, out = sys.argv[1:4]
     base = Image.open(base_p).convert("RGB")
     top = trim(Image.open(top_p).convert("RGB"))

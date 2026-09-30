@@ -16,10 +16,16 @@ public class Choose_panel : MonoBehaviour
     Transform designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback (unused; initialisation happens in do_start).
+    /// </summary>
     void Start()
     {
     }
 
+    /// <summary>
+    /// Initialises the image-path panel (references to the lab controller and the canvas).
+    /// </summary>
     public void do_start()
     {   
         sphere = GameObject.Find("sphere");
@@ -73,6 +79,9 @@ public class Choose_panel : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         

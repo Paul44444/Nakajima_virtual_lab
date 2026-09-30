@@ -9,6 +9,9 @@ public class Save_params_script : MonoBehaviour
     public vis_3D vis;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: connects the button to the analysis of the current parameters.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -18,6 +21,9 @@ public class Save_params_script : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         

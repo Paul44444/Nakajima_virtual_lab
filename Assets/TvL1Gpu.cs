@@ -23,11 +23,19 @@ public class TvL1Gpu : IDisposable
 
     public static string last_error = null;
 
+    /// <summary>
+    /// Checks whether the current graphics device supports compute shaders.
+    /// </summary>
+    /// <returns>True if compute shaders are available.</returns>
     public static bool IsSupported()
     {
         return SystemInfo.supportsComputeShaders;
     }
 
+    /// <summary>
+    /// Loads the TV-L1 compute shader (Resources/TVL1.compute) and looks up its kernels; does nothing if already loaded.
+    /// </summary>
+    /// <returns>True if the shader and all kernels were found.</returns>
     public bool Load()
     {
         if (cs != null)
@@ -59,11 +67,34 @@ public class TvL1Gpu : IDisposable
     }
 
     // Maximale Gruppenzahl je Dispatch-Dimension (D3D11/12)
+    /// <summary>
+    /// Checks whether an image of the given size fits into a single one-dimensional dispatch (at most 65535 thread groups).
+    /// </summary>
+    /// <param name="nx">Image width in pixels.</param>
+    /// <param name="ny">Image height in pixels.</param>
+    /// <returns>True if the image can be processed in one dispatch.</returns>
     public static bool FitsDispatch(int nx, int ny)
     {
         return (nx * ny + GROUP - 1) / GROUP <= 65535;
     }
 
+    /// <summary>
+    /// Uploads the data of one pyramid level to the GPU and initialises the primal and dual variables. Must be called on the Unity main thread before RunWarp.
+    /// </summary>
+    /// <param name="I0">Reference image of the level (row-major, nx*ny).</param>
+    /// <param name="I1">Target image of the level.</param>
+    /// <param name="I1x">x derivative of the target image.</param>
+    /// <param name="I1y">y derivative of the target image.</param>
+    /// <param name="u1">Initial horizontal flow (from the coarser level).</param>
+    /// <param name="u2">Initial vertical flow.</param>
+    /// <param name="nx">Width of the level.</param>
+    /// <param name="ny">Height of the level.</param>
+    /// <param name="tau">Time step of the dual update.</param>
+    /// <param name="lambda">Weight of the data term.</param>
+    /// <param name="theta">Coupling parameter between flow and auxiliary variable.</param>
+    /// <param name="epsilon">Stopping tolerance of the iterations.</param>
+    /// <param name="max_its">Maximum number of iterations per warp.</param>
+    /// <param name="grad_is_zero">Threshold below which the squared image gradient is treated as zero.</param>
     public void Begin(float[] I0, float[] I1, float[] I1x, float[] I1y, float[] u1, float[] u2,
         int nx, int ny, float tau, float lambda, float theta, float epsilon, int max_its, float grad_is_zero)
     {
@@ -140,6 +171,11 @@ public class TvL1Gpu : IDisposable
     }
 
     // Ein Warp: Warp-Kernel, dann bis zu max_iterations Iterationen. Rueckgabe: ausgefuehrte Iterationen.
+    /// <summary>
+    /// Performs one warp: warps the target image with the current flow and runs the primal-dual iterations until convergence or the iteration limit.
+    /// </summary>
+    /// <param name="warp">Index of the warp within the level (0-based).</param>
+    /// <returns>Number of iterations executed.</returns>
     public int RunWarp(int warp)
     {
         cs.SetInt("warp_idx", warp);
@@ -161,6 +197,11 @@ public class TvL1Gpu : IDisposable
         return (int)state_host[1];
     }
 
+    /// <summary>
+    /// Downloads the flow of the level from the GPU and releases all buffers.
+    /// </summary>
+    /// <param name="u1_out">Receives the horizontal flow (nx*ny).</param>
+    /// <param name="u2_out">Receives the vertical flow (nx*ny).</param>
     public void End(float[] u1_out, float[] u2_out)
     {
         b_u1.GetData(u1_out, 0, 0, size);
@@ -168,6 +209,11 @@ public class TvL1Gpu : IDisposable
         Release();
     }
 
+    /// <summary>
+    /// Creates a compute buffer and fills it with the given data.
+    /// </summary>
+    /// <param name="data">Values to upload.</param>
+    /// <returns>The new buffer (caller releases it).</returns>
     static ComputeBuffer Upload(float[] data)
     {
         ComputeBuffer b = new ComputeBuffer(data.Length, sizeof(float));
@@ -175,6 +221,11 @@ public class TvL1Gpu : IDisposable
         return b;
     }
 
+    /// <summary>
+    /// Creates a zero-initialised compute buffer.
+    /// </summary>
+    /// <param name="n">Number of float elements (at least 1).</param>
+    /// <returns>The new buffer.</returns>
     static ComputeBuffer Zeros(int n)
     {
         ComputeBuffer b = new ComputeBuffer(Math.Max(1, n), sizeof(float));
@@ -182,6 +233,10 @@ public class TvL1Gpu : IDisposable
         return b;
     }
 
+    /// <summary>
+    /// Releases a compute buffer if it exists and sets the reference to null.
+    /// </summary>
+    /// <param name="b">Buffer to release.</param>
     static void Rel(ref ComputeBuffer b)
     {
         if (b != null)
@@ -191,6 +246,9 @@ public class TvL1Gpu : IDisposable
         }
     }
 
+    /// <summary>
+    /// Releases all GPU buffers of the current level.
+    /// </summary>
     public void Release()
     {
         Rel(ref b_i0); Rel(ref b_i1); Rel(ref b_i1x); Rel(ref b_i1y);
@@ -200,6 +258,9 @@ public class TvL1Gpu : IDisposable
         Rel(ref b_partial); Rel(ref b_state); Rel(ref b_err);
     }
 
+    /// <summary>
+    /// Releases all GPU resources (IDisposable).
+    /// </summary>
     public void Dispose()
     {
         Release();

@@ -24,6 +24,9 @@ public class Res_script : MonoBehaviour
     Toggle toggle_1600;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the resolution toggles of the scene and registers their handlers.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -55,11 +58,18 @@ public class Res_script : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Sets the render resolution to 128 px and clears the other toggles.
+    /// </summary>
+    /// <param name="toggle">Toggle that triggered the change.</param>
     void to_128(Toggle toggle)
     {
         vis.set_render_res(128);
@@ -69,6 +79,10 @@ public class Res_script : MonoBehaviour
         toggle_512.isOn = false;
         toggle_1600.isOn = false;
     }
+    /// <summary>
+    /// Sets the render resolution to 256 px and clears the other toggles.
+    /// </summary>
+    /// <param name="toggle">Toggle that triggered the change.</param>
     void to_256(Toggle toggle)
     {
         vis.set_render_res(256);
@@ -77,6 +91,10 @@ public class Res_script : MonoBehaviour
         toggle_512.isOn = false;
         toggle_1600.isOn = false;
     }
+    /// <summary>
+    /// Sets the render resolution to 512 px and clears the other toggles.
+    /// </summary>
+    /// <param name="toggle">Toggle that triggered the change.</param>
     void to_512(Toggle toggle)
     {
         vis.set_render_res(512);
@@ -85,6 +103,10 @@ public class Res_script : MonoBehaviour
         toggle_256.isOn = false;
         toggle_1600.isOn = false;
     }
+    /// <summary>
+    /// Sets the render resolution to 1600 px and clears the other toggles.
+    /// </summary>
+    /// <param name="toggle">Toggle that triggered the change.</param>
     void to_1600(Toggle toggle)
     {
         vis.set_render_res(1600);

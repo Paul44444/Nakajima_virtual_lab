@@ -28,10 +28,19 @@ ERR_MAX = 2.0  # px
 
 
 def rot(a):
+    """Rotates by 90 degrees (manuscript orientation).
+
+    Args:
+        a: Map.
+
+    Returns:
+        Rotated map.
+    """
     return np.rot90(a)
 
 
 def main():
+    """Creates the DIC comparison figure (arguments: folder, image, output, optional TV label)."""
     folder, im_path, out = sys.argv[1:4]
     tv_label = sys.argv[4] if len(sys.argv) > 4 else None
     if tv_label:
@@ -63,6 +72,19 @@ def main():
     cm_err.set_bad((0.12, 0.12, 0.12, 1))
 
     def show(ax, img, cmap, vmin, vmax, title):
+        """Draws a map panel without axes.
+
+        Args:
+            ax: Axes.
+            img: Map.
+            cmap: Colour map.
+            vmin: Lower limit.
+            vmax: Upper limit.
+            title: Title.
+
+        Returns:
+            Image handle.
+        """
         h = ax.imshow(rot(img), cmap=cmap, vmin=vmin, vmax=vmax, interpolation="nearest")
         ax.set_title(title, fontsize=8.5)
         ax.set_xticks([]); ax.set_yticks([])

@@ -43,6 +43,14 @@ EDGE_HALF = 5     # px: Kantenband = Sprungpixel +- EDGE_HALF
 
 
 def load_raw(path):
+    """Reads a raw .f32 map (int magic, n, m, float32 values).
+
+    Args:
+        path: File.
+
+    Returns:
+        Array image[row][column].
+    """
     raw = open(path, "rb").read()
     _, n, m = struct.unpack("<iii", raw[:12])
     a = np.frombuffer(raw, dtype="<f4", offset=12).reshape(n, m).astype(float)
@@ -50,6 +58,15 @@ def load_raw(path):
 
 
 def read_gray(path, res):
+    """Reads a gray-value image and scales it to the analysis resolution.
+
+    Args:
+        path: Image file.
+        res: Resolution in pixels.
+
+    Returns:
+        uint8 image.
+    """
     import cv2
     im = cv2.imread(path, 0)
     if im.shape[0] != res:
@@ -89,6 +106,17 @@ def to_pixels(xs, ys, dx, dy, shape, roi):
 
 
 def run_pydic(im_a, im_b, roi, p):
+    """Runs pydic (subset DIC) on the image pair in the region of interest.
+
+    Args:
+        im_a: Reference image.
+        im_b: Deformed image.
+        roi: Region (r0, r1, c0, c1).
+        p: Settings (subset, step).
+
+    Returns:
+        Displacement maps u, v and run time.
+    """
     sys.path.insert(0, os.path.join(TOOLS, "downloads"))
     import cv2
     import pydic
@@ -109,6 +137,17 @@ def run_pydic(im_a, im_b, roi, p):
 
 
 def run_mudic(im_a, im_b, roi, p):
+    """Runs muDIC (Q4 finite-element DIC) on the image pair in the region of interest.
+
+    Args:
+        im_a: Reference image.
+        im_b: Deformed image.
+        roi: Region (r0, r1, c0, c1).
+        p: Settings (element size).
+
+    Returns:
+        Displacement maps u, v and run time.
+    """
     import muDIC as dic
     r0, r1, c0, c1 = roi
     stack = dic.image_stack_from_list([im_a.astype(float), im_b.astype(float)])
@@ -124,6 +163,11 @@ def run_mudic(im_a, im_b, roi, p):
 
 
 def find_dice():
+    """Finds the DICe executable.
+
+    Returns:
+        Path, or None.
+    """
     for c in DICE_EXE_CANDIDATES:
         if os.path.isfile(c):
             return c
@@ -193,6 +237,10 @@ def run_dice(im_a, im_b, roi, p):
 
 
 def main():
+    """Command line: runs the DIC tools and TV-L1 on a frame pair and writes maps (npz) and error statistics (tsv).
+
+    Arguments: exp res frame_a frame_b gt_dir out_dir [--skip tools] [--ncorr u v].
+    """
     args = sys.argv[1:]
     skip = set()
     ncorr = None

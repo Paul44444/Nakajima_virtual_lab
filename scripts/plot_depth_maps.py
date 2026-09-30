@@ -20,6 +20,17 @@ from plot_maps import CMAP_DIVERGING  # noqa: E402
 
 
 def load(folder, name, res, screen=False):
+    """Reads a raw map if present.
+
+    Args:
+        folder: Folder.
+        name: Map name.
+        res: Resolution.
+        screen: True for screen maps (y from below).
+
+    Returns:
+        Map, or None.
+    """
     p = os.path.join(folder, "%s_r%s.f32" % (name, res))
     if not os.path.exists(p):
         return None
@@ -32,6 +43,15 @@ def load(folder, name, res, screen=False):
 
 
 def panel(folder, res):
+    """Overview figure of the stereo depth (TV, reference, difference, disparity error).
+
+    Args:
+        folder: Folder.
+        res: Resolution.
+
+    Returns:
+        Output path, or None.
+    """
     t, g, e = load(folder, "depth_tv", res), load(folder, "depth_ref", res), load(folder, "disparity_epe", res)
     if t is None or g is None:
         return None
@@ -71,6 +91,7 @@ def panel(folder, res):
 
 
 def main():
+    """Command line: resolution followed by folders."""
     res = sys.argv[1]
     for folder in sys.argv[2:]:
         out = panel(folder, res)

@@ -13,6 +13,9 @@ public class Vis_action : MonoBehaviour
     public bool check_vis;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the lab controller.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -20,16 +23,25 @@ public class Vis_action : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         ;
     }
 
+    /// <summary>
+    /// Unity callback: initialises the texture coordinates of the sample when it becomes visible.
+    /// </summary>
     private void OnBecameVisible()
     {
         set_up_blade();
     }
 
+    /// <summary>
+    /// Assigns texture coordinates to the sample by projecting its vertices into the camera, so that the speckle texture is attached to the material from the first frame on.
+    /// </summary>
     public void set_up_blade()
     {
         if (!vis.get_visible() || !check_vis)
@@ -49,6 +61,12 @@ public class Vis_action : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Converts projected vertex positions to texture coordinates and assigns them to the mesh of the sample.
+    /// </summary>
+    /// <param name="blade">Sample object.</param>
+    /// <param name="projs">Projected vertex positions.</param>
+    /// <returns>The sample object.</returns>
     public GameObject uvs2obj(GameObject blade, Vector3[] projs)
     {
         Mesh mesh = blade.GetComponent<MeshFilter>().mesh;
@@ -60,6 +78,11 @@ public class Vis_action : MonoBehaviour
         return blade;
     }
 
+    /// <summary>
+    /// Converts projected 3D positions to 2D texture coordinates.
+    /// </summary>
+    /// <param name="projs">Projected positions (x, y used).</param>
+    /// <returns>Texture coordinates per vertex.</returns>
     public Vector2[] proj2uv(Vector3[] projs)
     {
         // info (paul): convert the 3ds to 2ds
@@ -80,6 +103,11 @@ public class Vis_action : MonoBehaviour
         return uvs;
     }
 
+    /// <summary>
+    /// Projects all vertices of the sample into the camera.
+    /// </summary>
+    /// <param name="blade">Sample object.</param>
+    /// <returns>Projected positions per vertex.</returns>
     public UnityEngine.Vector3[] obj2uvs(GameObject blade)
     {
         Mesh mesh = blade.GetComponent<MeshFilter>().mesh;
@@ -101,6 +129,11 @@ public class Vis_action : MonoBehaviour
         return projs;
     }
 
+    /// <summary>
+    /// Normalises projected positions to the range 0 to 1 using their bounding box.
+    /// </summary>
+    /// <param name="projs">Projected positions.</param>
+    /// <returns>Normalised positions.</returns>
     public Vector3[] norm_projs(UnityEngine.Vector3[] projs)
     {
         // info (paul): finding mins and maxs

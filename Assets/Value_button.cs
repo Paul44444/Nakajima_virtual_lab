@@ -9,6 +9,9 @@ public class Value_button : MonoBehaviour
     public vis_3D vis;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -17,10 +20,16 @@ public class Value_button : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
+    /// <summary>
+    /// Shows the measured displacement on the sample.
+    /// </summary>
     void on_click()
     {
         vis.set_plot_mode("value");

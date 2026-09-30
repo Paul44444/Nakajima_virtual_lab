@@ -14,6 +14,9 @@ public class Load_button : MonoBehaviour
     Explorer_paul explorer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers the click handler and looks up the (possibly inactive) file explorer through the canvas.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -33,11 +36,17 @@ public class Load_button : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Opens the file explorer for loading images.
+    /// </summary>
     void on_click()
     {
         if (explorer_obj == null || explorer == null)

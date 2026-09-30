@@ -19,6 +19,9 @@ public class Open_switch : MonoBehaviour
     Design_Exp_Button designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the switch panel and the other panels; registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -38,17 +41,26 @@ public class Open_switch : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
     
+    /// <summary>
+    /// Toggles the display-switch panel and closes the other panels.
+    /// </summary>
     public void on_click()
     {
         analyzer.close_my();
         designer.close_my();
         switch_panel.gameObject.SetActive(!switch_panel.gameObject.activeSelf);
     }
+    /// <summary>
+    /// Hides the display-switch panel.
+    /// </summary>
     public void close_my()
     {
         switch_panel.gameObject.SetActive(false);

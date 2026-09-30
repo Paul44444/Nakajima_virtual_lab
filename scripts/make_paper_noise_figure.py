@@ -28,6 +28,14 @@ VMAX = 0.15
 
 
 def fnum(s):
+    """Converts to float (NaN on error).
+
+    Args:
+        s: Value.
+
+    Returns:
+        Number.
+    """
     try:
         return float(s)
     except (TypeError, ValueError):
@@ -35,17 +43,33 @@ def fnum(s):
 
 
 def load(project, level):
+    """Loads a rendered image of a noise level (rotated like the manuscript figures).
+
+    Args:
+        project: Project folder.
+        level: Noise level (e.g. clean).
+
+    Returns:
+        Gray values 0..1.
+    """
     p = os.path.join(project, "Assetsshot_%s" % level, "cam_0", "uv", "im_%d_r512.png" % FRAME)
     # um 90 Grad gedreht wie im Original und in den uebrigen Manuskriptabbildungen (Ziehstempel links/rechts)
     return np.rot90(np.asarray(Image.open(p).convert("L")).astype(float) / 255.0)
 
 
 def tag(ax, text):
+    """Writes a label in the upper left of a panel.
+
+    Args:
+        ax: Axes.
+        text: Text.
+    """
     ax.text(0.03, 0.97, text, transform=ax.transAxes, ha="left", va="top", color="white", fontsize=10,
             fontweight="bold", bbox=dict(facecolor="black", alpha=0.75, pad=1.5, lw=0))
 
 
 def main():
+    """Creates the noise figure of the paper (example images and error diagrams)."""
     tsv, project, out = sys.argv[1], sys.argv[2], sys.argv[3]
     with open(tsv, encoding="utf-8-sig") as fh:
         rows = list(csv.DictReader([l for l in fh if l.strip()], delimiter="\t"))

@@ -19,6 +19,9 @@ public class Confirm_ims_but : MonoBehaviour
     public Transform choose_panel;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the panels and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -35,16 +38,25 @@ public class Confirm_ims_but : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Click handler: reads the two image paths of the path panel.
+    /// </summary>
     public void on_click()
     {
         collect_vals();
     }
 
+    /// <summary>
+    /// Reads the two image paths of the path panel (with defaults if empty) and starts the analysis of this user-supplied image pair.
+    /// </summary>
     public void collect_vals()
     {
         // info (paul): set save path:

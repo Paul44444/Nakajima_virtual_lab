@@ -18,6 +18,9 @@ public class Strain_D : MonoBehaviour
     //      plot the x- or y- derivative of the strain
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers this control at the lab controller and wires the forward/back buttons.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -33,11 +36,18 @@ public class Strain_D : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
 
     }
 
+    /// <summary>
+    /// Shows the current derivative direction of the strain display in the label.
+    /// </summary>
+    /// <param name="strain_mode">Direction to display (x or y).</param>
     public void refresh_info(string strain_mode)
     {
         Transform t_label = t_panel.Find("t_label");
@@ -46,6 +56,9 @@ public class Strain_D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Switches the derivative direction of the strain display between x and y.
+    /// </summary>
     public void forward_action()
     {
         string strain_mode_now = vis.get_strain_d_mode();
@@ -65,6 +78,9 @@ public class Strain_D : MonoBehaviour
         vis.refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Switches the derivative direction (same as forward) and refreshes the view.
+    /// </summary>
     public void back_action()
     {
         forward_action();

@@ -22,6 +22,11 @@ public class ExperimentImageGallery : MonoBehaviour
     private Text resultsText;
     private int currentIndex;
 
+    /// <summary>
+    /// Creates the gallery (singleton) with its complete user interface under the canvas, if it does not exist yet.
+    /// </summary>
+    /// <param name="canvas">Canvas that receives the gallery.</param>
+    /// <returns>The gallery instance.</returns>
     public static ExperimentImageGallery EnsureCreated(Transform canvas)
     {
         if (instance != null)
@@ -34,12 +39,19 @@ public class ExperimentImageGallery : MonoBehaviour
         return instance;
     }
 
+    /// <summary>
+    /// Removes all images of the gallery (e.g. before a new analysis).
+    /// </summary>
     public static void ClearCurrentExperiment()
     {
         if (instance != null)
             instance.ClearImages();
     }
 
+    /// <summary>
+    /// Appends an image file to the gallery.
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
     public static void AddRenderedImage(string path)
     {
         if (instance != null && !string.IsNullOrEmpty(path) && File.Exists(path))
@@ -48,6 +60,10 @@ public class ExperimentImageGallery : MonoBehaviour
 
     //28092026 Bild hinzufuegen oder, falls derselbe Pfad schon in der Galerie ist, dort ersetzen
     //  (z.B. belichtete TV-Eingangsbilder, die bei jedem Lauf neu geschrieben werden)
+    /// <summary>
+    /// Adds an image or, if the same path is already in the gallery, replaces it in place (for files rewritten by every run).
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
     public static void AddOrReplaceImage(string path)
     {
         if (instance == null || string.IsNullOrEmpty(path) || !File.Exists(path))
@@ -69,6 +85,11 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //28092026 Bild an Position index setzen; ist es schon in der Galerie, wird es dorthin verschoben (keine Doppel)
+    /// <summary>
+    /// Places an image at a given position; an image that is already in the gallery is moved there (no duplicates).
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
+    /// <param name="index">Target position (0 = first).</param>
     public static void InsertOrMoveImage(string path, int index)
     {
         if (instance == null || string.IsNullOrEmpty(path) || !File.Exists(path))
@@ -86,6 +107,9 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //28092026 erstes Bild der Galerie anzeigen
+    /// <summary>
+    /// Shows the first image of the gallery.
+    /// </summary>
     public static void ShowFirst()
     {
         if (instance == null || instance.sprites.Count == 0)
@@ -96,6 +120,11 @@ public class ExperimentImageGallery : MonoBehaviour
 
     //23092026 Bild an Position index einfuegen (z.B. Genauigkeits-Panels vor den Einzelkarten)
     //  und direkt anzeigen.
+    /// <summary>
+    /// Inserts an image at a given position and shows it.
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
+    /// <param name="index">Insert position.</param>
     public static void InsertRenderedImage(string path, int index)
     {
         if (instance != null && !string.IsNullOrEmpty(path) && File.Exists(path))
@@ -106,6 +135,10 @@ public class ExperimentImageGallery : MonoBehaviour
     //  aktualisieren (die Galerie wird in vis_3D.Start vor load_render_res_pref gebaut)
     private Button speckleModeButton;
     private InputField analysisExposureField; //28092026
+    /// <summary>
+    /// Updates labels that depend on saved settings (speckle mode, exposure factor) after the settings have been loaded.
+    /// </summary>
+    /// <param name="vis">Lab controller that holds the settings.</param>
     public static void RefreshStateLabels(vis_3D vis)
     {
         if (instance == null || vis == null)
@@ -116,18 +149,28 @@ public class ExperimentImageGallery : MonoBehaviour
             instance.analysisExposureField.text = vis.get_analysis_exposure().ToString("G4", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Opens the gallery window if it contains images.
+    /// </summary>
     public static void ShowWhenFinished()
     {
         if (instance != null && instance.sprites.Count > 0)
             instance.Show();
     }
 
+    /// <summary>
+    /// Opens the gallery window even without images (to show the result report).
+    /// </summary>
     public static void ShowResultsWindow()
     {
         if (instance != null)
             instance.ShowEvenWithoutImages();
     }
 
+    /// <summary>
+    /// Builds the complete interface: gallery button, control panel with the tabs Analyse, Sweeps, Stereo, and Realbild, TV-parameter panel, gallery window, tooltip, and the hover explanations of all controls.
+    /// </summary>
+    /// <param name="canvas">Canvas that receives the interface.</param>
     private void BuildUi(Transform canvas)
     {
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -633,6 +676,9 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //30092026 Nutzerwunsch: kurze Erklaerung je Bedienelement (Objektname -> Text), erscheint beim Hovern
+    /// <summary>
+    /// Attaches a short explanation (tooltip) to every control of the control panel and of the TV-parameter panel, looked up by object name.
+    /// </summary>
     private void AddTooltips()
     {
         var tips = new Dictionary<string, string>
@@ -722,6 +768,11 @@ public class ExperimentImageGallery : MonoBehaviour
     private readonly List<CanvasGroup> tabGroups = new List<CanvasGroup>();
     private static readonly Color TAB_PREVIEW = new Color(0.78f, 0.9f, 1f, 1f);
 
+    /// <summary>
+    /// Creates the control panel at the right edge below the gallery button; its content is clipped during the open/close animation.
+    /// </summary>
+    /// <param name="canvas">Canvas that receives the panel.</param>
+    /// <param name="font">Font of the controls.</param>
     private void BuildControlPanel(Transform canvas, Font font)
     {
         controlPanel = CreatePanel("control_panel", canvas, new Color(0.1f, 0.12f, 0.15f, 0.93f));
@@ -730,6 +781,12 @@ public class ExperimentImageGallery : MonoBehaviour
         controlPanel.AddComponent<RectMask2D>(); //30092026 Inhalt waehrend der Auf-/Zuklapp-Animation abschneiden
     }
 
+    /// <summary>
+    /// Creates a tab button (2x2 layout, reading order) and the content container of the tab; hovering the button opens a preview.
+    /// </summary>
+    /// <param name="label">Text of the tab.</param>
+    /// <param name="font">Font of the button.</param>
+    /// <returns>Transform of the content container that receives the controls of the tab.</returns>
     private Transform CreateTab(string label, Font font)
     {
         int idx = tabContents.Count;
@@ -758,6 +815,10 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // Hoehe des zuletzt angelegten Reiters aus dem Zeilenzeiger y (negativ, unterhalb der letzten Zeile)
+    /// <summary>
+    /// Sets the height of the tab created last from the row cursor.
+    /// </summary>
+    /// <param name="y">Row cursor after the last control (negative, below the last row).</param>
     private void FinishTab(float y)
     {
         int i = tabContents.Count - 1;
@@ -766,6 +827,10 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // Klick auf einen Reiter: fest oeffnen (pinnen) bzw. den gepinnten Reiter wieder einklappen
+    /// <summary>
+    /// Pins a tab open (click) or collapses the panel when the pinned tab is clicked again; ends a hover preview and stores the choice.
+    /// </summary>
+    /// <param name="idx">Index of the tab, or -1 to collapse.</param>
     private void SelectTab(int idx)
     {
         activeTab = idx >= 0 && idx < tabContents.Count ? idx : -1;
@@ -775,6 +840,9 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //30092026 angezeigt wird der Vorschau-Reiter, sonst der gepinnte; Hoehe wird in UpdateHoverUi animiert
+    /// <summary>
+    /// Shows the previewed tab or else the pinned one, colours the tab buttons, and sets the target height of the panel animation.
+    /// </summary>
     private void ApplyTabDisplay()
     {
         int shown = previewTab >= 0 ? previewTab : activeTab;
@@ -802,6 +870,9 @@ public class ExperimentImageGallery : MonoBehaviour
     private CanvasGroup tvGroup;
     private RectTransform tvToggleRect;
 
+    /// <summary>
+    /// Opens the TV-parameter panel (fade-in animation), fills its fields, and brings it and the tooltip to the front.
+    /// </summary>
     private void OpenTvPanel()
     {
         if (!tvPanel.activeSelf)
@@ -822,6 +893,11 @@ public class ExperimentImageGallery : MonoBehaviour
     private RectTransform canvasRect;
     private const float TIP_DELAY = 0.4f, TIP_W = 250f;
 
+    /// <summary>
+    /// Creates the tooltip panel, which never blocks pointer events.
+    /// </summary>
+    /// <param name="canvas">Canvas that receives the tooltip.</param>
+    /// <param name="font">Font of the tooltip text.</param>
     private void BuildTooltip(Transform canvas, Font font)
     {
         canvasRect = canvas as RectTransform;
@@ -844,6 +920,11 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // Erklaerung an ein Bedienelement haengen (Name -> Text in AddTooltips)
+    /// <summary>
+    /// Attaches a tooltip text to a control (adds the hover component if needed).
+    /// </summary>
+    /// <param name="g">Control that shows the text.</param>
+    /// <param name="text">Explanation.</param>
     private static void Tip(GameObject g, string text)
     {
         if (g == null)
@@ -854,6 +935,9 @@ public class ExperimentImageGallery : MonoBehaviour
         h.text = text;
     }
 
+    /// <summary>
+    /// Per-frame update of the hover interface: closes the tab preview when the pointer leaves the panel, animates the panel height and the fade-in, handles preview and pinning of the TV-parameter panel, and positions the tooltip next to the cursor after a short delay.
+    /// </summary>
     private void UpdateHoverUi()
     {
         if (controlPanel == null)
@@ -948,6 +1032,10 @@ public class ExperimentImageGallery : MonoBehaviour
     //  die in den Streifen des Bedienpanels ragen, zur Laufzeit nach links schieben (Szenendatei bleibt unveraendert).
     //  Alle rechtsbuendigen alten Panels im betroffenen Hoehenbereich wandern um denselben Betrag, damit ihre
     //  Anordnung zueinander erhalten bleibt; hoechstens bis zum linken Bildrand.
+    /// <summary>
+    /// Shifts right-aligned legacy scene panels that overlap the strip of the control panel (e.g. the path panel with its image preview and the series panel) to the left by a common offset, at most to the left screen edge; the scene file is not changed.
+    /// </summary>
+    /// <param name="canvas">Canvas whose children are checked.</param>
     private void MoveOldPanelsLeft(Transform canvas)
     {
         RectTransform canvasRect = canvas as RectTransform;
@@ -1005,6 +1093,11 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // naechste Zeile (Hoehe 45) am Zeilenzeiger y: gibt die obere Kante zurueck und rueckt y weiter
+    /// <summary>
+    /// Returns the top of the next control row and advances the row cursor by one row (45 units).
+    /// </summary>
+    /// <param name="y">Row cursor, updated in place.</param>
+    /// <returns>Top edge of the row.</returns>
     private static float NextRow(ref float y)
     {
         float top = y;
@@ -1013,6 +1106,13 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // Abschnittsueberschrift (Hoehe 22) am Zeilenzeiger y
+    /// <summary>
+    /// Adds a section heading at the row cursor and advances the cursor.
+    /// </summary>
+    /// <param name="parent">Tab content that receives the heading.</param>
+    /// <param name="label">Heading text.</param>
+    /// <param name="y">Row cursor, updated in place.</param>
+    /// <param name="font">Font of the heading.</param>
     private static void Header(Transform parent, string label, ref float y, Font font)
     {
         Text t = CreateText("section_" + label, parent, label, font, 14, TextAnchor.LowerLeft);
@@ -1022,6 +1122,11 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //21092026 Beschriftung des Look-Umschalters: zeigt den AKTIVEN Zustand und was ein Klick tut.
+    /// <summary>
+    /// Label of the render-look switch showing the active look and the effect of a click.
+    /// </summary>
+    /// <param name="nakajima">True if the Nakajima look is active.</param>
+    /// <returns>Button text.</returns>
     private static string LookLabel(bool nakajima)
     {
         return nakajima ? "Look AKTIV: Nakajima  (Klick -> klassisch)" : "Look AKTIV: klassisch  (Klick -> Nakajima)";
@@ -1032,6 +1137,14 @@ public class ExperimentImageGallery : MonoBehaviour
     private InputField tvLambda, tvTheta, tvScales, tvWarps, tvIterations, tvEpsilon, tvStrainSigma, tvTgvRatio;
 
     //30092026 Schalter liegt im Reiter "Analyse" (toggleParent), das Panel auf dem Canvas links neben dem Bedienpanel
+    /// <summary>
+    /// Creates the TV-parameter button inside a tab and the TV-parameter panel (lambda, theta, pyramid levels, warps, iterations, epsilon, strain smoothing, TGV ratio, GPU/CPU and TV/TGV switches) next to the control panel.
+    /// </summary>
+    /// <param name="canvas">Canvas that receives the panel.</param>
+    /// <param name="toggleParent">Tab content that receives the button.</param>
+    /// <param name="togglePos">Position of the button.</param>
+    /// <param name="toggleSize">Size of the button.</param>
+    /// <param name="font">Font of the controls.</param>
     private void BuildTvParameterPanel(Transform canvas, Transform toggleParent, Vector2 togglePos, Vector2 toggleSize, Font font)
     {
         Button toggle = CreateButton("tv_params_button", toggleParent, "TV-Parameter", font);
@@ -1131,16 +1244,34 @@ public class ExperimentImageGallery : MonoBehaviour
     private Button tvTgvButton;
 
     //27092026 Beschriftung des Regularisierungs-Schalters (zeigt den AKTIVEN Zustand)
+    /// <summary>
+    /// Label of the regulariser switch showing the active regulariser.
+    /// </summary>
+    /// <param name="tgv">True if TGV is active.</param>
+    /// <returns>Button text.</returns>
     private static string TvTgvLabel(bool tgv)
     {
         return tgv ? "Regularisierung AKTIV: TGV  (Klick -> TV)" : "Regularisierung AKTIV: TV  (Klick -> TGV)";
     }
 
+    /// <summary>
+    /// Label of the computation-path switch showing whether the GPU or the CPU is used.
+    /// </summary>
+    /// <param name="gpu">True if the GPU path is active.</param>
+    /// <returns>Button text.</returns>
     private static string TvGpuLabel(bool gpu)
     {
         return gpu ? "Rechenweg AKTIV: GPU  (Klick -> CPU)" : "Rechenweg AKTIV: CPU  (Klick -> GPU)";
     }
 
+    /// <summary>
+    /// Adds a labelled input field to the TV-parameter panel.
+    /// </summary>
+    /// <param name="label">Description shown left of the field.</param>
+    /// <param name="name">Object name of the field.</param>
+    /// <param name="y">Vertical offset from the top of the panel.</param>
+    /// <param name="font">Font of label and field.</param>
+    /// <returns>The input field.</returns>
     private InputField AddTvField(string label, string name, float y, Font font)
     {
         Text text = CreateText(name + "_label", tvPanel.transform, label, font, 13, TextAnchor.MiddleLeft);
@@ -1150,12 +1281,19 @@ public class ExperimentImageGallery : MonoBehaviour
         return field;
     }
 
+    /// <summary>
+    /// Looks up the lab controller.
+    /// </summary>
+    /// <returns>The vis_3D component or null.</returns>
     private static vis_3D Vis()
     {
         GameObject sphere = GameObject.Find("sphere");
         return sphere != null ? sphere.GetComponent<vis_3D>() : null;
     }
 
+    /// <summary>
+    /// Fills the TV-parameter fields with the current overrides (empty = automatic) and updates the switch labels.
+    /// </summary>
     private void RefreshTvFields()
     {
         vis_3D vis = Vis();
@@ -1177,16 +1315,31 @@ public class ExperimentImageGallery : MonoBehaviour
             tvGpuButton.GetComponentInChildren<Text>().text = TvGpuLabel(vis.get_tv_use_gpu());
     }
 
+    /// <summary>
+    /// Formats a parameter override for its input field.
+    /// </summary>
+    /// <param name="value">Override value (NaN or non-positive = automatic).</param>
+    /// <returns>Text for the field, empty for automatic.</returns>
     private static string TvText(double value)
     {
         return (double.IsNaN(value) || value <= 0d) ? "" : value.ToString("G6", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Formats an integer parameter override for its input field.
+    /// </summary>
+    /// <param name="value">Override value (non-positive = automatic).</param>
+    /// <returns>Text for the field, empty for automatic.</returns>
     private static string TvText(int value)
     {
         return value <= 0 ? "" : value.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Parses a number from an input field; comma and point are both accepted as decimal separator.
+    /// </summary>
+    /// <param name="field">Input field.</param>
+    /// <returns>The value, or NaN if the field is empty or invalid.</returns>
     private static double TvParse(InputField field)
     {
         string text = field.text == null ? "" : field.text.Trim();
@@ -1203,18 +1356,31 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //27092026 wie TvParse, aber 0 ist ein gueltiger Wert (Strain-Glaettung aus); ungueltig -> NaN
+    /// <summary>
+    /// Like TvParse, but zero is a valid value (e.g. strain smoothing off).
+    /// </summary>
+    /// <param name="field">Input field.</param>
+    /// <returns>The value (at least 0), or NaN if empty or invalid.</returns>
     private static double TvParseOrZero(InputField field)
     {
         double value = TvParse(field);
         return (double.IsNaN(value) || value < 0d) ? double.NaN : value;
     }
 
+    /// <summary>
+    /// Parses a positive integer from an input field.
+    /// </summary>
+    /// <param name="field">Input field.</param>
+    /// <returns>The rounded value, or -1 for empty or invalid input.</returns>
     private static int TvParseInt(InputField field)
     {
         double value = TvParse(field);
         return (double.IsNaN(value) || value <= 0d) ? -1 : (int)System.Math.Round(value);
     }
 
+    /// <summary>
+    /// Passes the values of the TV-parameter panel to the lab controller and reports the active parameters.
+    /// </summary>
     private void ApplyTvFields()
     {
         vis_3D vis = Vis();
@@ -1239,6 +1405,9 @@ public class ExperimentImageGallery : MonoBehaviour
     private Button rotateButton;
     private int displayRotation = 0; // 0, 90, 180, 270 (Grad, gegen den Uhrzeigersinn)
 
+    /// <summary>
+    /// Rotates the displayed images by 90 degrees (view only; the files are unchanged) and stores the angle.
+    /// </summary>
     private void RotateDisplay()
     {
         displayRotation = (displayRotation + 90) % 360;
@@ -1256,6 +1425,10 @@ public class ExperimentImageGallery : MonoBehaviour
     private float lastClickTime = -1f;
     private const float ZoomMax = 16f;
 
+    /// <summary>
+    /// Returns the camera needed for screen-to-UI conversions (null for screen-space overlay canvases).
+    /// </summary>
+    /// <returns>Camera of the canvas or null.</returns>
     private Camera UiCamera()
     {
         Canvas canvas = window != null ? window.GetComponentInParent<Canvas>() : null;
@@ -1263,6 +1436,10 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //28092026 fuer Cam_manager: Mausrad/Maustasten ueber der Galerie nicht an die Kamera weitergeben
+    /// <summary>
+    /// Checks whether the pointer is over the gallery window, the control panel, or the TV-parameter panel (used by the camera control to ignore the mouse wheel there).
+    /// </summary>
+    /// <returns>True if the pointer is over one of these panels.</returns>
     public static bool PointerOverGallery()
     {
         if (instance == null)
@@ -1275,6 +1452,9 @@ public class ExperimentImageGallery : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Resets zoom and panning of the displayed image.
+    /// </summary>
     private void ResetZoom()
     {
         zoom = 1f;
@@ -1285,6 +1465,9 @@ public class ExperimentImageGallery : MonoBehaviour
         UpdateZoomLabel();
     }
 
+    /// <summary>
+    /// Updates the zoom hint below the image.
+    /// </summary>
     private void UpdateZoomLabel()
     {
         if (zoomLabel != null)
@@ -1293,6 +1476,11 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     // Verschiebung begrenzen, damit das Bild nicht aus dem Ausschnitt wandert
+    /// <summary>
+    /// Limits the panning so that the zoomed image does not leave the viewport.
+    /// </summary>
+    /// <param name="position">Requested image position.</param>
+    /// <returns>Clamped position.</returns>
     private Vector2 ClampPan(Vector2 position)
     {
         Vector2 size = viewportRect.rect.size;
@@ -1300,6 +1488,9 @@ public class ExperimentImageGallery : MonoBehaviour
         return new Vector2(Mathf.Clamp(position.x, -mx, mx), Mathf.Clamp(position.y, -my, my));
     }
 
+    /// <summary>
+    /// Unity callback: updates the hover interface and handles zoom (mouse wheel around the cursor), panning (drag), and reset (right click or double click) of the gallery image.
+    /// </summary>
     private void Update()
     {
         UpdateHoverUi(); //30092026 Tooltips, Reiter-Vorschau, Animationen (auch ohne offenes Bildfenster)
@@ -1349,6 +1540,9 @@ public class ExperimentImageGallery : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Applies the stored display rotation to the image and the rotate button.
+    /// </summary>
     private void ApplyDisplayRotation()
     {
         if (image == null)
@@ -1361,6 +1555,9 @@ public class ExperimentImageGallery : MonoBehaviour
     private Button cameraFilterButton;
     private string cameraFilter = "alle"; // "alle" | "cam_0" | "cam_1"
 
+    /// <summary>
+    /// Cycles the camera filter of the gallery (all images, only cam_0, only cam_1).
+    /// </summary>
     private void CycleCameraFilter()
     {
         cameraFilter = cameraFilter == "alle" ? "cam_0" : cameraFilter == "cam_0" ? "cam_1" : "alle";
@@ -1371,6 +1568,11 @@ public class ExperimentImageGallery : MonoBehaviour
             UpdateDisplay();
     }
 
+    /// <summary>
+    /// Checks whether an image passes the camera filter; maps and plots without camera in the path always pass.
+    /// </summary>
+    /// <param name="path">Path of the image.</param>
+    /// <returns>True if the image is shown.</returns>
     private bool MatchesFilter(string path)
     {
         if (cameraFilter == "alle")
@@ -1383,6 +1585,10 @@ public class ExperimentImageGallery : MonoBehaviour
         return cameraFilter == "cam_0" ? isCam0 : isCam1;
     }
 
+    /// <summary>
+    /// Counts the images that pass the camera filter.
+    /// </summary>
+    /// <returns>Number of visible images.</returns>
     private int CountMatching()
     {
         int n = 0;
@@ -1391,6 +1597,11 @@ public class ExperimentImageGallery : MonoBehaviour
         return n;
     }
 
+    /// <summary>
+    /// Position of an image among the images that pass the camera filter.
+    /// </summary>
+    /// <param name="index">Index in the complete list.</param>
+    /// <returns>1-based position among the visible images.</returns>
     private int IndexAmongMatching(int index)
     {
         int n = 0;
@@ -1402,6 +1613,9 @@ public class ExperimentImageGallery : MonoBehaviour
     //21092026 Nutzerwunsch: gespeicherte Renders (cam_0/cam_1) und Karten (nice_pics/plot_*)
     //fuer das aktuelle Experiment + Aufloesung von der Platte laden - ohne neue Analyse.
     //Sortierung: erst cam_0 nach Zeitindex, dann cam_1, dann die Karten.
+    /// <summary>
+    /// Loads the saved renders (cam_0, cam_1) and maps of the current experiment and resolution from disk without a new analysis.
+    /// </summary>
     public static void LoadSavedImages()
     {
         if (instance == null)
@@ -1463,6 +1677,14 @@ public class ExperimentImageGallery : MonoBehaviour
         instance.ShowEvenWithoutImages();
     }
 
+    /// <summary>
+    /// Appends a statistics line of an analysis to the result report.
+    /// </summary>
+    /// <param name="experiment">Experiment label.</param>
+    /// <param name="mean">Mean error.</param>
+    /// <param name="std">Standard deviation.</param>
+    /// <param name="min">Minimum.</param>
+    /// <param name="max">Maximum.</param>
     public static void AddAnalysisResult(string experiment, float mean, float std, float min, float max)
     {
         if (instance == null)
@@ -1479,6 +1701,10 @@ public class ExperimentImageGallery : MonoBehaviour
             instance.resultsText.text += "\n\n" + row;
     }
 
+    /// <summary>
+    /// Replaces the result report of the gallery.
+    /// </summary>
+    /// <param name="value">New report text.</param>
     public static void SetResultsText(string value)
     {
         if (instance != null)
@@ -1486,12 +1712,20 @@ public class ExperimentImageGallery : MonoBehaviour
     }
 
     //28092026 Hinweis (z. B. Plot-Fehler) an den Ergebnistext anhaengen
+    /// <summary>
+    /// Appends a line to the result report (e.g. a plotting error).
+    /// </summary>
+    /// <param name="value">Text to append.</param>
     public static void AppendResultsText(string value)
     {
         if (instance != null)
             instance.resultsText.text += "\n" + value;
     }
 
+    /// <summary>
+    /// Shows the table and the plot of the last illumination, noise, or speckle study.
+    /// </summary>
+    /// <param name="analysis">Study: lighting, noise, or speckle.</param>
     public static void LoadPreviousAnalysis(string analysis)
     {
         if (instance == null)
@@ -1565,6 +1799,11 @@ public class ExperimentImageGallery : MonoBehaviour
             _ = vis.show_sweep_plot(analysis);
     }
 
+    /// <summary>
+    /// Loads an image file into the gallery.
+    /// </summary>
+    /// <param name="path">Path of the image file.</param>
+    /// <param name="insertAt">Insert position, or -1 to append.</param>
     private void LoadImage(string path, int insertAt = -1)
     {
         byte[] bytes = File.ReadAllBytes(path);
@@ -1599,6 +1838,9 @@ public class ExperimentImageGallery : MonoBehaviour
         UpdateDisplay();
     }
 
+    /// <summary>
+    /// Removes all images and releases their textures.
+    /// </summary>
     private void ClearImages()
     {
         foreach (Sprite sprite in sprites)
@@ -1617,6 +1859,9 @@ public class ExperimentImageGallery : MonoBehaviour
         window.SetActive(false);
     }
 
+    /// <summary>
+    /// Shows the previous image that passes the camera filter.
+    /// </summary>
     private void Previous()
     {
         if (sprites.Count == 0) return;
@@ -1629,6 +1874,9 @@ public class ExperimentImageGallery : MonoBehaviour
         UpdateDisplay();
     }
 
+    /// <summary>
+    /// Shows the next image that passes the camera filter.
+    /// </summary>
     private void Next()
     {
         if (sprites.Count == 0) return;
@@ -1641,6 +1889,9 @@ public class ExperimentImageGallery : MonoBehaviour
         UpdateDisplay();
     }
 
+    /// <summary>
+    /// Opens the gallery window.
+    /// </summary>
     private void Show()
     {
         window.SetActive(true);
@@ -1648,6 +1899,9 @@ public class ExperimentImageGallery : MonoBehaviour
         UpdateDisplay();
     }
 
+    /// <summary>
+    /// Opens the gallery window even if it contains no images.
+    /// </summary>
     private void ShowEvenWithoutImages()
     {
         window.SetActive(true);
@@ -1657,6 +1911,9 @@ public class ExperimentImageGallery : MonoBehaviour
             UpdateDisplay();
     }
 
+    /// <summary>
+    /// Closes the gallery window and shows the gallery button.
+    /// </summary>
     private void Hide()
     {
         window.SetActive(false);
@@ -1664,6 +1921,9 @@ public class ExperimentImageGallery : MonoBehaviour
         openButton.transform.SetAsLastSibling();
     }
 
+    /// <summary>
+    /// Shows the current image with counter, title, and illumination label.
+    /// </summary>
     private void UpdateDisplay()
     {
         if (sprites.Count == 0) return;
@@ -1676,6 +1936,11 @@ public class ExperimentImageGallery : MonoBehaviour
         openButton.GetComponentInChildren<Text>().text = "Bilder (" + sprites.Count + ")";
     }
 
+    /// <summary>
+    /// Derives a readable description of the experiment (illumination, shot noise, speckle size) from the folder of an image.
+    /// </summary>
+    /// <param name="path">Path of the image.</param>
+    /// <returns>Description for the title line.</returns>
     private static string GetLightingLabel(string path)
     {
         DirectoryInfo directory = new FileInfo(path).Directory;
@@ -1713,6 +1978,13 @@ public class ExperimentImageGallery : MonoBehaviour
         return "Beleuchtung: normales Experiment";
     }
 
+    /// <summary>
+    /// Creates a coloured UI panel.
+    /// </summary>
+    /// <param name="name">Object name.</param>
+    /// <param name="parent">Parent transform.</param>
+    /// <param name="color">Background colour.</param>
+    /// <returns>The panel object.</returns>
     private static GameObject CreatePanel(string name, Transform parent, Color color)
     {
         GameObject panel = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -1721,6 +1993,14 @@ public class ExperimentImageGallery : MonoBehaviour
         return panel;
     }
 
+    /// <summary>
+    /// Creates a button with a centred label.
+    /// </summary>
+    /// <param name="name">Object name.</param>
+    /// <param name="parent">Parent transform.</param>
+    /// <param name="label">Button text.</param>
+    /// <param name="font">Font of the text.</param>
+    /// <returns>The button.</returns>
     private static Button CreateButton(string name, Transform parent, string label, Font font)
     {
         GameObject buttonObject = CreatePanel(name, parent, new Color(0.88f, 0.88f, 0.88f, 1f));
@@ -1734,6 +2014,14 @@ public class ExperimentImageGallery : MonoBehaviour
         return button;
     }
 
+    /// <summary>
+    /// Creates a single-line input field.
+    /// </summary>
+    /// <param name="name">Object name.</param>
+    /// <param name="parent">Parent transform.</param>
+    /// <param name="value">Initial text.</param>
+    /// <param name="font">Font of the text.</param>
+    /// <returns>The input field.</returns>
     private static InputField CreateInputField(string name, Transform parent, string value, Font font)
     {
         GameObject inputObject = CreatePanel(name, parent, new Color(0.96f, 0.96f, 0.96f, 1f));
@@ -1750,6 +2038,16 @@ public class ExperimentImageGallery : MonoBehaviour
         return input;
     }
 
+    /// <summary>
+    /// Creates a text element.
+    /// </summary>
+    /// <param name="name">Object name.</param>
+    /// <param name="parent">Parent transform.</param>
+    /// <param name="value">Text.</param>
+    /// <param name="font">Font.</param>
+    /// <param name="fontSize">Font size.</param>
+    /// <param name="alignment">Text alignment.</param>
+    /// <returns>The text component.</returns>
     private static Text CreateText(string name, Transform parent, string value, Font font,
         int fontSize, TextAnchor alignment)
     {
@@ -1764,6 +2062,13 @@ public class ExperimentImageGallery : MonoBehaviour
         return text;
     }
 
+    /// <summary>
+    /// Sets anchor, pivot, position, and size of a UI element (anchor and pivot are the same point).
+    /// </summary>
+    /// <param name="rect">Element to place.</param>
+    /// <param name="position">Anchored position.</param>
+    /// <param name="size">Size.</param>
+    /// <param name="anchor">Anchor and pivot (e.g. (1,1) = top right).</param>
     private static void SetRect(RectTransform rect, Vector2 position, Vector2 size, Vector2 anchor)
     {
         rect.anchorMin = anchor;

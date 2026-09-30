@@ -36,6 +36,9 @@ public class Cam_manager : MonoBehaviour
     float scrolled_dist;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Initialises the interactive camera: references to the lab controller, the cameras, and the default position.
+    /// </summary>
     public void do_start()
     {
         scrolled_dist = 0f;
@@ -71,6 +74,9 @@ public class Cam_manager : MonoBehaviour
         pivot = pivot_exp;
         pos_cam = pos_exp_0;
     }
+    /// <summary>
+    /// Applies position, rotation, and zoom of the active camera for the sample (platine) view.
+    /// </summary>
     public void start_for_platine()
     {
         manage_pos(active_cam);
@@ -78,6 +84,9 @@ public class Cam_manager : MonoBehaviour
         manage_scroll(active_cam);
     }
 
+    /// <summary>
+    /// Unity callback: updates position, rotation, and mouse-wheel zoom of the active camera; ignores the mouse wheel while the pointer is over the UI panels.
+    /// </summary>
     void Update()
     {
         if (false)//13072025 (Input.GetKey("u"))
@@ -138,6 +147,10 @@ public class Cam_manager : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Places the camera relative to the sample plane.
+    /// </summary>
+    /// <param name="cam_obj">Camera object to place.</param>
     public void manage_pos(GameObject cam_obj)
     {
         if (!platine_plane)
@@ -158,6 +171,10 @@ public class Cam_manager : MonoBehaviour
         }
     }
     int rot_counter;
+    /// <summary>
+    /// Rotates the camera from the mouse movement (yaw and pitch).
+    /// </summary>
+    /// <param name="cam_obj">Camera object to rotate.</param>
     public void manage_rot(GameObject cam_obj)
     {
         rot_counter += 1;
@@ -176,6 +193,14 @@ public class Cam_manager : MonoBehaviour
         //transform.eulerAngles = new Vector3(pitch, -90f - yaw, 0.0f);
     }
 
+    /// <summary>
+    /// Creates a small marker sphere at a position (debugging aid).
+    /// </summary>
+    /// <param name="x">x coordinate.</param>
+    /// <param name="y">y coordinate.</param>
+    /// <param name="z">z coordinate.</param>
+    /// <param name="size">Diameter of the sphere.</param>
+    /// <returns>The created sphere.</returns>
     public GameObject make_sphere_at(float x, float y, float z, float size = 1f)
     {
         //(GameObject sphere_local, _) = but1.build_object(new Vector3(x, y, z), 
@@ -189,6 +214,10 @@ public class Cam_manager : MonoBehaviour
         return sphere_local;
     }
 
+    /// <summary>
+    /// Moves the camera along its viewing direction according to the mouse wheel.
+    /// </summary>
+    /// <param name="cam">Camera object to move.</param>
     public void manage_scroll(GameObject cam)
     {
         float scroll = Input.mouseScrollDelta.y;//150722025 Input.GetAxis("Mouse ScrollWheel");
@@ -209,6 +238,12 @@ public class Cam_manager : MonoBehaviour
         //transform.position = find_vec_sum(pivot, 0.99f*vec_diff);
     }
 
+    /// <summary>
+    /// Adds two vectors component-wise.
+    /// </summary>
+    /// <param name="vec_a">First vector.</param>
+    /// <param name="vec_b">Second vector.</param>
+    /// <returns>Sum of both vectors.</returns>
     public Vector3 find_vec_sum(Vector3 vec_a, Vector3 vec_b)
     {
         Vector3 vec_c = new Vector3();
@@ -218,6 +253,12 @@ public class Cam_manager : MonoBehaviour
         return vec_c;
     }
 
+    /// <summary>
+    /// Subtracts two vectors.
+    /// </summary>
+    /// <param name="vec_a">Minuend.</param>
+    /// <param name="vec_b">Subtrahend.</param>
+    /// <returns>Difference vec_a - vec_b.</returns>
     public Vector3 find_vec_diff(Vector3 vec_a, Vector3 vec_b)
     {
         Vector3 vec_c = find_vec_sum(vec_a, -vec_b);

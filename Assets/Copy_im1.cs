@@ -13,6 +13,9 @@ public class Copy_im1 : MonoBehaviour
     public Transform designer;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: looks up the path panel and registers the click handler.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -25,11 +28,17 @@ public class Copy_im1 : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback (unused).
+    /// </summary>
     void Update()
     {
         
     }
 
+    /// <summary>
+    /// Copies the second image path of the path panel to the clipboard.
+    /// </summary>
     public void on_click()
     {
         Transform path_now_label = designer.Find("input_field_im1");

@@ -15,6 +15,10 @@ public class HoverTip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public static HoverTip current;  // Element unter dem Cursor
     public static float enterTime;   // Zeitpunkt des Eintritts (Tooltip-Verzoegerung)
 
+    /// <summary>
+    /// Called by the event system when the pointer enters the element: marks it as current tooltip source and invokes onEnter.
+    /// </summary>
+    /// <param name="eventData">Pointer event data (unused).</param>
     public void OnPointerEnter(PointerEventData eventData)
     {
         current = this;
@@ -22,6 +26,10 @@ public class HoverTip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         onEnter?.Invoke();
     }
 
+    /// <summary>
+    /// Called by the event system when the pointer leaves the element: clears the tooltip source and invokes onExit.
+    /// </summary>
+    /// <param name="eventData">Pointer event data (unused).</param>
     public void OnPointerExit(PointerEventData eventData)
     {
         if (current == this)
@@ -29,6 +37,9 @@ public class HoverTip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         onExit?.Invoke();
     }
 
+    /// <summary>
+    /// Unity callback: clears the tooltip source when the element is disabled.
+    /// </summary>
     private void OnDisable()
     {
         if (current == this)

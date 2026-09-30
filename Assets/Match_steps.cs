@@ -14,6 +14,9 @@ public class Match_steps : MonoBehaviour
     Transform t_panel;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: registers this control at the lab controller and wires the forward/back buttons.
+    /// </summary>
     void Start()
     {
         sphere = GameObject.Find("sphere");
@@ -31,6 +34,9 @@ public class Match_steps : MonoBehaviour
     }
 
     // Update is called once per frame
+    /// <summary>
+    /// Unity callback: the arrow keys decrease or increase the number of matching steps.
+    /// </summary>
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.LeftArrow))
@@ -43,6 +49,10 @@ public class Match_steps : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Shows the current number of matching steps in the label.
+    /// </summary>
+    /// <param name="t_idx">Current time index (unused).</param>
     public void refresh_panel(int t_idx)
     {
         Transform t_label = t_panel.Find("t_label");
@@ -50,6 +60,9 @@ public class Match_steps : MonoBehaviour
         t_label.GetComponent<TextMeshProUGUI>().text = "match_steps: " + match_steps.ToString();
     }
 
+    /// <summary>
+    /// Increases the number of matching steps by one and refreshes the view.
+    /// </summary>
     public void forward_action()
     {
         int match_steps_now = vis.get_match_steps();
@@ -57,6 +70,9 @@ public class Match_steps : MonoBehaviour
         vis.refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Decreases the number of matching steps by one and refreshes the view.
+    /// </summary>
     public void back_action()
     {
         int match_steps_now = vis.get_match_steps();

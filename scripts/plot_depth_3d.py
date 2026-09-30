@@ -51,6 +51,14 @@ def fill_nearest(a, iters=12):
 
 
 def load_raw(path):
+    """Reads a raw .f32 map.
+
+    Args:
+        path: File.
+
+    Returns:
+        Array image[row][column].
+    """
     raw = open(path, "rb").read()
     _, n, m = struct.unpack("<iii", raw[:12])
     a = np.frombuffer(raw, dtype="<f4", offset=12).reshape(n, m).astype(float)
@@ -64,6 +72,16 @@ def resample(a, n):
 
 
 def bilinear(a, r, c):
+    """Bilinear interpolation of a map at sub-pixel positions.
+
+    Args:
+        a: Map.
+        r: Row positions.
+        c: Column positions.
+
+    Returns:
+        Interpolated values.
+    """
     r = np.clip(r, 0, a.shape[0] - 1.001)
     c = np.clip(c, 0, a.shape[1] - 1.001)
     r0, c0 = r.astype(int), c.astype(int)
@@ -140,6 +158,14 @@ def prepare_sceneflow(argv, flow_comp, z_exag):
     flow_what = os.environ.get("FLOW_WHAT", "tv")
 
     def load(name):
+        """Loads a scene-flow map in manuscript orientation.
+
+        Args:
+            name: Map name.
+
+        Returns:
+            Map.
+        """
         return np.rot90(load_raw(os.path.join(folder, "sceneflow_%s_r%s.f32" % (name, res))))  # Manuskript-Orientierung
 
     pos = {c: load("pos_ref_" + c) for c in "xyz"}  # Materialpunkt in Frame A (Rig-System, relativ zu cam_0)
@@ -171,6 +197,7 @@ def prepare_sceneflow(argv, flow_comp, z_exag):
 
 
 def main():
+    """Command line: 3D plot of the height map with flow arrows (or scene flow with --sceneflow; env FLOW_COMP, ELEV, AZIM, Z_EXAG)."""
     sceneflow = sys.argv[1] == "--sceneflow"
     flow_comp = os.environ.get("FLOW_COMP", "both" if sceneflow else "y")  # y | x | both
     elev = float(os.environ.get("ELEV", "38"))

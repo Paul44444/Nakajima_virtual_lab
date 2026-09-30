@@ -15,10 +15,28 @@ from PIL import Image
 
 
 def label(s):
+    """File label of a speckle diameter (dot replaced by p).
+
+    Args:
+        s: Diameter in texture pixels.
+
+    Returns:
+        Label.
+    """
     return ("%g" % s).replace(".", "p")
 
 
 def make(n, s, seed):
+    """Periodic speckle texture: one black disc per cell at a random position (diameter s = 0.7 x cell size).
+
+    Args:
+        n: Texture size in pixels.
+        s: Speckle diameter in pixels.
+        seed: Random seed.
+
+    Returns:
+        Image 0..1.
+    """
     rng = np.random.default_rng(seed)
     delta = s / 0.7
     cells = max(1, int(round(n / delta)))
@@ -48,6 +66,7 @@ def make(n, s, seed):
 
 
 def main():
+    """Command line: writes procedural speckle textures to Assets/cam00/procedural."""
     here = os.path.dirname(os.path.abspath(__file__))
     out = os.path.join(os.path.dirname(here), "Assets", "cam00", "procedural")
     os.makedirs(out, exist_ok=True)

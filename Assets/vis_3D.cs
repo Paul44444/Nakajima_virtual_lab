@@ -121,6 +121,9 @@ public class vis_3D : MonoBehaviour
     private volatile bool is_tv_finished = false;
     private bool cv_action_running = false;
 
+    /// <summary>
+    /// Looks up the progress panel of the scene (bar and text) used for long computations.
+    /// </summary>
     public void init_progress_ui()
     {
         if (canvas == null)
@@ -150,6 +153,11 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Sets the position within a series of computations (e.g. a stage of a sweep) for the progress display and starts the stopwatch at the first item.
+    /// </summary>
+    /// <param name="current_idx">Index of the current item (1-based).</param>
+    /// <param name="total_count">Number of items.</param>
     public void set_series_progress_info(int current_idx, int total_count)
     {
         series_current_idx = Mathf.Max(1, current_idx);
@@ -160,6 +168,14 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Initialises the progress estimate of one optical-flow computation from the pyramid sizes, warps, and iterations.
+    /// </summary>
+    /// <param name="nscales">Number of pyramid levels.</param>
+    /// <param name="nx">Width of each level.</param>
+    /// <param name="ny">Height of each level.</param>
+    /// <param name="warps">Warps per level.</param>
+    /// <param name="max_iterations">Maximum iterations per warp.</param>
     public void start_tv_progress(int nscales, List<int> nx, List<int> ny, int warps, int max_iterations)
     {
         is_tv_running = true;
@@ -182,6 +198,17 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Advances the progress estimate by one iteration and stores the status for the display.
+    /// </summary>
+    /// <param name="s">Current pyramid level.</param>
+    /// <param name="nscales">Number of levels.</param>
+    /// <param name="current_warp">Current warp.</param>
+    /// <param name="total_warps">Warps per level.</param>
+    /// <param name="current_it">Current iteration.</param>
+    /// <param name="max_it">Maximum iterations.</param>
+    /// <param name="nx">Width of the level.</param>
+    /// <param name="ny">Height of the level.</param>
     public void update_tv_progress_step(int s, int nscales, int current_warp, int total_warps, int current_it, int max_it, int nx, int ny)
     {
         double pixel_weight = (double)nx * (double)ny;
@@ -197,6 +224,9 @@ public class vis_3D : MonoBehaviour
         status_ny = ny;
     }
 
+    /// <summary>
+    /// Updates the progress bar and text on the main thread (called from Update); also opens the gallery when a background computation has requested it.
+    /// </summary>
     public void render_progress_ui_main_thread()
     {
         if (gallery_show_pending)
@@ -284,6 +314,9 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Finishes the progress display when the last item of a series is done.
+    /// </summary>
     public void finish_tv_progress()
     {
         if (series_current_idx >= series_total_count)
@@ -292,6 +325,9 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Stops the progress display; UI actions are deferred to the main thread because this may be called from the flow thread.
+    /// </summary>
     public void finish_all_tv_progress()
     {
         progress_stopwatch.Stop();
@@ -312,6 +348,13 @@ public class vis_3D : MonoBehaviour
     //  (vorher begann der Balken je Stufe neu). Art des Laufs fuer die ETA-Zeile.
     private string progress_kind = "Parameterstudie";
 
+    /// <summary>
+    /// Shows the overall progress of a study (e.g. stage 3 of 27) in front of the flow progress.
+    /// </summary>
+    /// <param name="current">Current stage (1-based).</param>
+    /// <param name="total">Number of stages.</param>
+    /// <param name="kind">Kind of study shown in the label.</param>
+    /// <param name="label">Label of the current stage.</param>
     void set_overall_progress(int current, int total, string kind, string label)
     {
         progress_kind = kind;
@@ -319,6 +362,9 @@ public class vis_3D : MonoBehaviour
         progress_prefix = "[" + kind + " " + current + "/" + total + ": " + label + "] ";
     }
 
+    /// <summary>
+    /// Clears the overall-progress prefix after a study.
+    /// </summary>
     void reset_overall_progress()
     {
         progress_prefix = "";
@@ -327,6 +373,11 @@ public class vis_3D : MonoBehaviour
         series_total_count = 1;
     }
 
+    /// <summary>
+    /// Formats a duration as mm:ss or hh:mm:ss.
+    /// </summary>
+    /// <param name="seconds">Duration in seconds.</param>
+    /// <returns>Formatted duration, or --:-- if unknown.</returns>
     private string FormatTimeSpan(double seconds)
     {
         if (double.IsInfinity(seconds) || double.IsNaN(seconds) || seconds < 0) return "--:--";
@@ -445,6 +496,10 @@ public class vis_3D : MonoBehaviour
     bool speckle_sweep_running = false;
     int noise_sample_index = 0;
 
+    /// <summary>
+    /// Checks whether an illumination, noise, or speckle sweep is running.
+    /// </summary>
+    /// <returns>True during a sweep.</returns>
     private bool analysis_sweep_running()
     {
         return lighting_sweep_running || noise_sweep_running || speckle_sweep_running;
@@ -505,6 +560,9 @@ public class vis_3D : MonoBehaviour
     int series_idx = 0;
 
     // Start is called before the first frame update
+    /// <summary>
+    /// Unity callback: initialises the lab - paths, cameras, lights, sample meshes, speckle settings, saved preferences, the user interface (gallery and control panel), and the scene panels.
+    /// </summary>
     void Start()
     {
         main_thread_id = System.Threading.Thread.CurrentThread.ManagedThreadId; //23092026 fuer run_on_main_thread
@@ -683,19 +741,34 @@ public class vis_3D : MonoBehaviour
         config_now = new ExpConfig();
         params_now = new Params();
     }
+    /// <summary>
+    /// Returns the parameters of the experiment that is currently rendered or analysed.
+    /// </summary>
+    /// <returns>Current experiment parameters.</returns>
     public Params get_params_now()
     {
         return params_now;
     }
+    /// <summary>
+    /// Returns the display scale of the reference maps.
+    /// </summary>
+    /// <returns>Scale factor.</returns>
     public float get_truth_map_scale()
     {
         return this.truth_map_scale;
     }
+    /// <summary>
+    /// Sets the display scale of the reference maps.
+    /// </summary>
+    /// <param name="value">Scale factor.</param>
     public void set_truth_map_scale(float value)
     {
         this.truth_map_scale = value;
     }
 
+    /// <summary>
+    /// Places the decorative laboratory objects (table, camera models) around the sample.
+    /// </summary>
     public void init_lab()
     {
         // info (paul): set up the nice theme for the virtual lab
@@ -721,6 +794,9 @@ public class vis_3D : MonoBehaviour
     List<float> strain_yx_muc = new List<float>() { };
     List<float> strain_yy_muc = new List<float>() { };
 
+    /// <summary>
+    /// Evaluation sequence for the MUC test variant: computes and exports the reference strain maps.
+    /// </summary>
     public void analyze_params_muc()
     {
         // info (paul): do the strain for ref
@@ -779,6 +855,13 @@ public class vis_3D : MonoBehaviour
         write_gom(minor_vals, major_vals, title: "gom_val.txt");
     }
 
+    /// <summary>
+    /// Linear blend of two lists.
+    /// </summary>
+    /// <param name="minor_ref">First list.</param>
+    /// <param name="minor">Second list.</param>
+    /// <param name="add_share">Weight of the second list (0..1).</param>
+    /// <returns>Blended list.</returns>
     public List<float> blend_floats(List<float> minor_ref, List<float> minor, float add_share)
     {
         List<float> blend = new List<float>();
@@ -791,51 +874,103 @@ public class vis_3D : MonoBehaviour
         return blend;
     }
 
+    /// <summary>
+    /// Returns camera 0 of the stereo rig.
+    /// </summary>
+    /// <returns>Camera 0.</returns>
     public Camera get_cam_for_uv_0()
     {
         return this.cam_for_uv_0;
     }
+    /// <summary>
+    /// Returns camera 1 of the stereo rig.
+    /// </summary>
+    /// <returns>Camera 1.</returns>
     public Camera get_cam_for_uv_1()
     {
         return this.cam_for_uv_1;
     }
+    /// <summary>
+    /// Stores the reference map of component u for camera 0.
+    /// </summary>
+    /// <param name="input">Reference map.</param>
     public void set_truth_0_u(List<List<float>> input)
     {
         this.truth_0_u = input;
     }
+    /// <summary>
+    /// Returns the reference map of component u for camera 0.
+    /// </summary>
+    /// <returns>Reference map.</returns>
     public List<List<float>> get_truth_0_u()
     {
         return truth_0_u;
     }
+    /// <summary>
+    /// Stores the reference map of component u for camera 1.
+    /// </summary>
+    /// <param name="input">Reference map.</param>
     public void set_truth_1_u(List<List<float>> input)
     {
         this.truth_1_u = input;
     }
+    /// <summary>
+    /// Returns the reference map of component u for camera 1.
+    /// </summary>
+    /// <returns>Reference map.</returns>
     public List<List<float>> get_truth_1_u()
     {
         return truth_1_u;
     }
 
+    /// <summary>
+    /// Stores the reference map of component v for camera 0.
+    /// </summary>
+    /// <param name="input">Reference map.</param>
     public void set_truth_0_v(List<List<float>> input)
     {
         this.truth_0_v = input;
     }
+    /// <summary>
+    /// Returns the reference map of component v for camera 0.
+    /// </summary>
+    /// <returns>Reference map.</returns>
     public List<List<float>> get_truth_0_v()
     {
         return this.truth_0_v;
     }
+    /// <summary>
+    /// Stores the reference map of component v for camera 1.
+    /// </summary>
+    /// <param name="input">Reference map.</param>
     public void set_truth_1_v(List<List<float>> input)
     {
         this.truth_1_v = input;
     }
+    /// <summary>
+    /// Returns the reference map of component v for camera 1.
+    /// </summary>
+    /// <returns>Reference map.</returns>
     public List<List<float>> get_truth_1_v()
     {
         return this.truth_1_v;
     }
+    /// <summary>
+    /// Returns the position at which the sample is placed.
+    /// </summary>
+    /// <returns>Sample position in world coordinates.</returns>
     public Vector3 get_blades_pos()
     {
         return this.blades_pos;
     }
+    /// <summary>
+    /// Computes minor and major principal strain from the components of the strain tensor.
+    /// </summary>
+    /// <param name="s_xx">Normal strain xx.</param>
+    /// <param name="s_xy">Shear component xy.</param>
+    /// <param name="s_yx">Shear component yx.</param>
+    /// <param name="s_yy">Normal strain yy.</param>
+    /// <returns>Tuple (minor strain, major strain) per point.</returns>
     public (List<float>, List<float>) minor_major(List<float> s_xx,
         List<float> s_xy, List<float> s_yx, List<float> s_yy)
     {
@@ -871,6 +1006,9 @@ public class vis_3D : MonoBehaviour
         return (minor, major);
     }
 
+    /// <summary>
+    /// Legacy evaluation sequence: steps through the time steps and exports flow and strain maps (optionally a CSV for the MUC evaluation).
+    /// </summary>
     public void analyze_params()
     {
         // info (paul): an analysis tool to go through the steps and do an analysis
@@ -904,6 +1042,9 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Builds a speckle pattern from cylinder objects on a plane (legacy texture generator, rendered by the speckle camera).
+    /// </summary>
     public void make_speckle_tex()
     {
         remove_children(speckle_parent);
@@ -937,6 +1078,9 @@ public class vis_3D : MonoBehaviour
             }
         }
     }
+    /// <summary>
+    /// Renders the speckle plane and saves it as speckle texture (speckle_patterns/speckle_size.png).
+    /// </summary>
     public void render_speckles()
     {
         Texture2D tex = speckle2tex();
@@ -949,6 +1093,10 @@ public class vis_3D : MonoBehaviour
         System.IO.File.WriteAllBytes(path_l, tex.EncodeToPNG());
     }
 
+    /// <summary>
+    /// Reads the render target of the speckle camera into a texture.
+    /// </summary>
+    /// <returns>Texture of the speckle pattern.</returns>
     public Texture2D speckle2tex()
     {
         GameObject cam_obj = GameObject.Find("speckle_cam");
@@ -963,6 +1111,15 @@ public class vis_3D : MonoBehaviour
         tex.Apply();
         return tex;
     }
+    /// <summary>
+    /// Adds one speckle (flat black cylinder) to the speckle plane.
+    /// </summary>
+    /// <param name="i_idx">Grid row.</param>
+    /// <param name="j_idx">Grid column.</param>
+    /// <param name="speckle_dist">Grid spacing.</param>
+    /// <param name="speckle_size">Diameter of the speckle.</param>
+    /// <param name="plane_pos">Position of the plane.</param>
+    /// <param name="plane_side_len">Side length of the plane.</param>
     public void add_single_speckle(int i_idx, int j_idx, float speckle_dist, float speckle_size,
         Vector3 plane_pos, float plane_side_len)
     {
@@ -1143,23 +1300,43 @@ public class vis_3D : MonoBehaviour
         return acts;
     }
 
+    /// <summary>
+    /// Sets the path of the current sample mesh.
+    /// </summary>
+    /// <param name="input">Path of the mesh file.</param>
     public void set_blade_path(string input)
     {
         this.blade_path = input;
     }
+    /// <summary>
+    /// Returns the path of the current sample mesh.
+    /// </summary>
+    /// <returns>Path of the mesh file.</returns>
     public string get_blade_path()
     {
         return blade_path;
     }
 
+    /// <summary>
+    /// Sets the base path of the experiment folders.
+    /// </summary>
+    /// <param name="input">Base path.</param>
     public void set_path_dic(string input)
     {
         this.path_dic = input;
     }
+    /// <summary>
+    /// Returns the base path of the experiment folders (the Assets folder; experiment labels are appended directly).
+    /// </summary>
+    /// <returns>Base path.</returns>
     public string get_path_dic()
     {
         return path_dic;
     }
+    /// <summary>
+    /// Adds time to the picture timer.
+    /// </summary>
+    /// <param name="value">Time to add in seconds.</param>
     public void add_to_pic_timer(float value)
     {
         float val_now = get_pic_timer();
@@ -1167,91 +1344,175 @@ public class vis_3D : MonoBehaviour
         set_pic_timer(val_new);
 
     }
+    /// <summary>
+    /// Sets the picture timer.
+    /// </summary>
+    /// <param name="value">Time in seconds.</param>
     public void set_pic_timer(float value)
     {
         this.pic_timer = value;
     }
+    /// <summary>
+    /// Returns the picture timer.
+    /// </summary>
+    /// <returns>Time in seconds.</returns>
     public float get_pic_timer()
     {
         return pic_timer;
     }
 
+    /// <summary>
+    /// Returns whether the sample objects have been created.
+    /// </summary>
+    /// <returns>True if created.</returns>
     public bool get_blades_created()
     {
         return blades_created;
     }
+    /// <summary>
+    /// Marks whether the sample objects have been created.
+    /// </summary>
+    /// <param name="input">True if created.</param>
     public void set_blades_created(bool input)
     {
         blades_created = input;
     }
+    /// <summary>
+    /// Sets the field of view of the cameras.
+    /// </summary>
+    /// <param name="input">Field of view in degrees.</param>
     public void set_field_of_view(float input)
     {
         this.field_of_view = input;
     }
+    /// <summary>
+    /// Returns the field of view of the cameras.
+    /// </summary>
+    /// <returns>Field of view in degrees.</returns>
     public float get_field_of_view()
     {
         return this.field_of_view;
     }
+    /// <summary>
+    /// Returns the index of the currently displayed time step of the sample.
+    /// </summary>
+    /// <returns>Time-step index.</returns>
     public int get_blade_idx()
     {
         return this.blade_idx_secret;
     }
+    /// <summary>
+    /// Sets the index of the currently displayed time step of the sample.
+    /// </summary>
+    /// <param name="input">Time-step index.</param>
     public void set_blade_idx(int input)
     {
         this.blade_idx_secret = input;
     }
 
+    /// <summary>
+    /// Enables or disables the optical-flow computation of the standard analysis (toggle with_tv).
+    /// </summary>
+    /// <param name="val">True to compute the flow.</param>
     public void set_with_main(bool val)
     {
         this.with_main = val;
     }
+    /// <summary>
+    /// Returns whether the optical flow is computed in the standard analysis.
+    /// </summary>
+    /// <returns>True if enabled.</returns>
     public bool get_with_main()
     {
         return this.with_main;
     }
+    /// <summary>
+    /// Adds a user-supplied image to the list of images for analysis.
+    /// </summary>
+    /// <param name="file_path">Path of the image.</param>
     public void add_to_im_files(string file_path)
     {
         im_paths.Add(file_path);
         refresh_tv_files(get_im_paths());
     }
+    /// <summary>
+    /// Removes an image from the list of images for analysis.
+    /// </summary>
+    /// <param name="file_path">Path of the image.</param>
     public void remove_from_im_files(string file_path)
     {
         im_paths.Remove(file_path);
         refresh_tv_files(get_im_paths());
     }
+    /// <summary>
+    /// Returns the list of user-supplied images.
+    /// </summary>
+    /// <returns>Image paths.</returns>
     public List<string> get_im_paths()
     {
         return im_paths;
     }
+    /// <summary>
+    /// Replaces the list of user-supplied images.
+    /// </summary>
+    /// <param name="input">Image paths.</param>
     public void set_im_paths(List<string> input)
     {
         im_paths = input;
     }
+    /// <summary>
+    /// Sets the input folder of an image series.
+    /// </summary>
+    /// <param name="input">Folder path.</param>
     public void set_in_dir(string input)
     {
         this.in_dir = input;
     }
+    /// <summary>
+    /// Returns the input folder of an image series.
+    /// </summary>
+    /// <returns>Folder path.</returns>
     public string get_in_dir()
     {
         return this.in_dir;
     }
+    /// <summary>
+    /// Sets the output folder of an image series.
+    /// </summary>
+    /// <param name="input">Folder path.</param>
     public void set_out_dir(string input)
     {
         this.out_dir = input;
     }
+    /// <summary>
+    /// Returns the output folder of an image series.
+    /// </summary>
+    /// <returns>Folder path.</returns>
     public string get_out_dir()
     {
         return this.out_dir;
     }
+    /// <summary>
+    /// Marks whether a user-supplied image series is evaluated.
+    /// </summary>
+    /// <param name="val">True for series mode.</param>
     public void set_series(bool val)
     {
         series = val;
     }
+    /// <summary>
+    /// Returns whether a user-supplied image series is evaluated.
+    /// </summary>
+    /// <returns>True in series mode.</returns>
     public bool get_series()
     {
         return series;
     }
 
+    /// <summary>
+    /// Sets the render resolution and stores it, so that it is restored after a restart of Play mode.
+    /// </summary>
+    /// <param name="input">Resolution in pixels (square images).</param>
     public void set_render_res(int input)
     {
         this.render_res = input;
@@ -1262,6 +1523,9 @@ public class vis_3D : MonoBehaviour
         PlayerPrefs.Save();
     }
     //21092026 Aufloesung aus PlayerPrefs laden (Default 128, wenn noch nichts gespeichert).
+    /// <summary>
+    /// Loads the stored render resolution (64 to 2048 px or the legacy 1600; default 128).
+    /// </summary>
     public void load_render_res_pref()
     {
         int saved = PlayerPrefs.GetInt("render_res", 128);
@@ -1292,13 +1556,25 @@ public class vis_3D : MonoBehaviour
     //die aequivalente vertikale FOV: fov' = 2*atan(aspect * tan(fov/2)).
     private float nakajima_real_aspect = 1f; //21092026 "Realbild: Neu" rendert jetzt quadratisch
     private float nakajima_real_fov = float.NaN;
+    /// <summary>
+    /// Field of view of a square image that covers the same horizontal extent as the non-square real camera.
+    /// </summary>
+    /// <returns>Field of view in degrees.</returns>
     public float nakajima_equivalent_square_fov()
     {
         float base_fov = float.IsNaN(nakajima_real_fov) ? this.field_of_view : nakajima_real_fov;
         float half = base_fov * 0.5f * Mathf.Deg2Rad;
         return 2f * Mathf.Atan(nakajima_real_aspect * Mathf.Tan(half)) * Mathf.Rad2Deg;
     }
+    /// <summary>
+    /// Returns whether the Nakajima render look is active.
+    /// </summary>
+    /// <returns>True for the Nakajima look.</returns>
     public bool get_nakajima_look() { return nakajima_look; }
+    /// <summary>
+    /// Switches between the classic and the Nakajima render look and stores the choice; applies from the next analysis.
+    /// </summary>
+    /// <param name="value">True for the Nakajima look.</param>
     public void set_nakajima_look(bool value)
     {
         nakajima_look = value;
@@ -1317,6 +1593,10 @@ public class vis_3D : MonoBehaviour
     //  - Massstab aus der gemeinsamen Umrissbreite (x) beider Meshes.
     //  - Anker: Grundplatte (verts z_min bzw. FBX y_min) in der Umrissmitte, damit der
     //    Dom-Frame (z bis ~16) nicht ueber die Bounds-Mitte verschoben wird.
+    /// <summary>
+    /// Places a sample mesh like the FBX reference of the Nakajima setup: orientation towards camera 0, scale from the common outline width, anchored at the base plate.
+    /// </summary>
+    /// <param name="surface_obj">Sample object to place.</param>
     public void align_blade_to_nakajima_reference(GameObject surface_obj)
     {
         GameObject reference = load_nakajima_fbx_blade(obj_name: "nakajima_look_reference_tmp");
@@ -1356,6 +1636,11 @@ public class vis_3D : MonoBehaviour
     }
 
     //21092026 gemessene synthetische Speckle-Textur (wie bei "Realbild: Neu") auf ein Material.
+    /// <summary>
+    /// Assigns the experiment-derived speckle texture to a material.
+    /// </summary>
+    /// <param name="material">Material of the sample.</param>
+    /// <param name="tiling">Texture tiling.</param>
     public void apply_measured_speckle_texture(Material material, Vector2 tiling)
     {
         Texture2D measured = load_experimental_statistics_speckle();
@@ -1372,6 +1657,10 @@ public class vis_3D : MonoBehaviour
             material.SetTextureScale("_MainTex", tiling);
         }
     }
+    /// <summary>
+    /// Returns the render resolution.
+    /// </summary>
+    /// <returns>Resolution in pixels.</returns>
     public int get_render_res()
     {
         return this.render_res;
@@ -1379,6 +1668,10 @@ public class vis_3D : MonoBehaviour
 
     string im_path_0;
     string im_path_1;
+    /// <summary>
+    /// Uses the first two user-supplied images as the image pair for the flow computation.
+    /// </summary>
+    /// <param name="im_paths">List of image paths.</param>
     public void refresh_tv_files(List<string> im_paths)
     {
         if (im_paths.Count > 1)
@@ -1390,6 +1683,9 @@ public class vis_3D : MonoBehaviour
 
         ;
     }
+    /// <summary>
+    /// Rebuilds the list of chosen files in the file explorer.
+    /// </summary>
     public void refresh_files_list()
     {
         //this.explorer
@@ -1401,6 +1697,10 @@ public class vis_3D : MonoBehaviour
             add_chosen_block(i);
         }
     }
+    /// <summary>
+    /// Destroys all children of a transform.
+    /// </summary>
+    /// <param name="obj">Parent transform.</param>
     public void clean_children(Transform obj)
     {
         int childCnt = obj.childCount;
@@ -1412,6 +1712,10 @@ public class vis_3D : MonoBehaviour
             Destroy(child.gameObject);
         }
     }
+    /// <summary>
+    /// Adds an entry for a chosen file to the file explorer.
+    /// </summary>
+    /// <param name="block_idx">Index of the file in the list.</param>
     public void add_chosen_block(int block_idx)
     {
         GameObject block_template = Resources.Load("chosen_block") as GameObject;
@@ -1443,14 +1747,26 @@ public class vis_3D : MonoBehaviour
         im.sprite = sprite;
     }
 
+    /// <summary>
+    /// Replaces the list of user-supplied images.
+    /// </summary>
+    /// <param name="files">Image paths.</param>
     public void set_im_files(List<string> files)
     {
         this.im_paths = files;
     }
+    /// <summary>
+    /// Returns the list of user-supplied images.
+    /// </summary>
+    /// <returns>Image paths.</returns>
     public List<string> get_im_files()
     {
         return this.im_paths;
     }
+    /// <summary>
+    /// Enables or disables rendering of the camera images in the standard analysis (toggle with_exp).
+    /// </summary>
+    /// <param name="val">True to render.</param>
     public void set_with_exp(bool val)
     {
         this.with_exp = val;
@@ -1466,10 +1782,18 @@ public class vis_3D : MonoBehaviour
             //22102024 set_blade_idx(blade_idx_max);
         }
     }
+    /// <summary>
+    /// Returns whether the camera images are rendered in the standard analysis.
+    /// </summary>
+    /// <returns>True if rendering is enabled.</returns>
     public bool get_with_exp()
     {
         return this.with_exp;
     }
+    /// <summary>
+    /// Starts (or marks as finished) the standard analysis; starting prepares the experiment list, cameras, and progress display.
+    /// </summary>
+    /// <param name="val">True to start.</param>
     public void set_is_started(bool val)
     {
         this.is_started = val;
@@ -1494,6 +1818,10 @@ public class vis_3D : MonoBehaviour
             exp_cv_acts = set_up_render_list();
         }
     }
+    /// <summary>
+    /// Returns whether an analysis is running.
+    /// </summary>
+    /// <returns>True while an analysis runs.</returns>
     public bool get_is_started()
     {
         return this.is_started;
@@ -1503,6 +1831,10 @@ public class vis_3D : MonoBehaviour
     //  Label "lighting_<Wert mit p statt Punkt>", z.B. 0.035 -> lighting_0p035 (eindeutig, auch nach remove_dots).
     //  29092026 Die Lichtstaerke skaliert light1/light2 aus exp_setup (siehe set_up_exp_setup_lights); vorher
     //  wurde nur ein schwaches Richtungslicht variiert, neben dem aktiven Szenen-Spotlicht wirkungslos.
+    /// <summary>
+    /// Starts the illumination study: for each factor I the lamps light1/light2 of the setup are scaled (all other lights off, ambient light min(I, 1)), the images are rendered and analysed, and the results are merged into lighting_sweep.tsv.
+    /// </summary>
+    /// <param name="intensityValues">List of illumination factors separated by comma, semicolon, or space.</param>
     public void start_lighting_sweep(string intensityValues = "0.1, 1, 8")
     {
         if (get_is_started())
@@ -1555,6 +1887,14 @@ public class vis_3D : MonoBehaviour
     //  mehr ueberschrieben, sondern zusammengefuehrt: vorhandene Zeilen bleiben, wenn Kopf, Aufloesung,
     //  Regularisierer und sigma passen und der Wert nicht erneut in der Liste steht (sonst ersetzt der neue Lauf
     //  die Zeile). "inf" in der Schluesselspalte zaehlt als 0 (= ohne Rauschen). Vorher wird gesichert.
+    /// <summary>
+    /// Merges the results of a sweep into its table: existing rows with the same resolution, regulariser, and strain smoothing are kept unless the stage is recomputed; the previous table is backed up.
+    /// </summary>
+    /// <param name="file">Table file in analysis_results.</param>
+    /// <param name="header">Header line of the table.</param>
+    /// <param name="key_column">Column that identifies a stage.</param>
+    /// <param name="new_values">Stage values of the current run.</param>
+    /// <param name="what">Name of the study for the log.</param>
     void merge_sweep_table(string file, string header, string key_column, List<float> new_values, string what)
     {
         string tsv = root_path + file;
@@ -1590,6 +1930,10 @@ public class vis_3D : MonoBehaviour
                 + (dropped > 0 ? ", " + dropped + " mit anderer Aufloesung/Regularisierung/sigma verworfen" : "") + ".");
     }
 
+    /// <summary>
+    /// Starts the photon shot-noise study: for each full-scale capacity N_max the images are degraded with Poisson noise and analysed; results in noise_sweep.tsv.
+    /// </summary>
+    /// <param name="peakElectronValues">List of N_max values (inf or the infinity sign = noise-free).</param>
     public void start_noise_sweep(string peakElectronValues)
     {
         if (get_is_started())
@@ -1648,6 +1992,10 @@ public class vis_3D : MonoBehaviour
         Debug.Log("Started Poisson shot-noise analysis for peak-electron levels: " + peakElectronValues);
     }
 
+    /// <summary>
+    /// Starts the speckle-size study with material sizes or procedural patterns (entries p&lt;s&gt;), renders and analyses each stage; results in speckle_sweep.tsv.
+    /// </summary>
+    /// <param name="diameterValues">List of speckle sizes or p&lt;s&gt; entries separated by semicolon.</param>
     public void start_speckle_sweep(string diameterValues)
     {
         if (get_is_started())
@@ -1742,6 +2090,9 @@ public class vis_3D : MonoBehaviour
     //05092024 {
     //05092024     return this.render_idx ;
     //05092024 }
+    /// <summary>
+    /// Legacy placeholder for global lighting settings (no effect).
+    /// </summary>
     public void manage_lighting_settings()
     {
         //26062024 // Create an instance of LightingSettings
@@ -1755,6 +2106,9 @@ public class vis_3D : MonoBehaviour
         //26062024 return Lightmapping;
     }
 
+    /// <summary>
+    /// Removes the previously generated sample objects.
+    /// </summary>
     public void clean_blades()
     {
         // info (paul): remove previously generated blades from the sample
@@ -1763,6 +2117,13 @@ public class vis_3D : MonoBehaviour
 
         this.set_visible(false);
     }
+    /// <summary>
+    /// Starts creating and rendering the sample objects of the time steps.
+    /// </summary>
+    /// <param name="blade_path">Path of the first mesh.</param>
+    /// <param name="blade_idx">Time-step index (-1 = all).</param>
+    /// <param name="with_uv_init">True to initialise the texture coordinates by projection.</param>
+    /// <returns>The created sample object.</returns>
     public GameObject start_renders(string blade_path, int blade_idx = -1, bool with_uv_init = false)
     {
         // info (paul):
@@ -1774,6 +2135,9 @@ public class vis_3D : MonoBehaviour
         return surface_obj;
     }
 
+    /// <summary>
+    /// Legacy helper: converts the rendered PNG images to TIFF with an external script.
+    /// </summary>
     public void png2tiff()
     {
         // info (paul): load png files in DIC_package directory, convert them to tiffs and save that again
@@ -1803,6 +2167,9 @@ public class vis_3D : MonoBehaviour
 
         //Process.Start("python", "script_paul21.py").WaitForExit();
     }
+    /// <summary>
+    /// Legacy helper: calls an external batch file (no longer used).
+    /// </summary>
     public void call_main_batch()
     {
         // this is never used anymore, right?
@@ -1841,35 +2208,64 @@ public class vis_3D : MonoBehaviour
         //Process.Start("python", "script_paul21.py").WaitForExit();
     }
 
+    /// <summary>
+    /// Returns the number of matching steps of the display.
+    /// </summary>
+    /// <returns>Number of steps.</returns>
     public int get_match_steps()
     {
         return match_steps;
     }
 
+    /// <summary>
+    /// Sets the number of matching steps of the display.
+    /// </summary>
+    /// <param name="input">Number of steps.</param>
     public void set_match_steps(int input)
     {
         match_steps = input;
         //dt_compare = match_steps;
     }
 
+    /// <summary>
+    /// Marks whether the next sample object can be rendered.
+    /// </summary>
+    /// <param name="input">True when ready.</param>
     public void set_ready_for_next_blade(bool input)
     {
         ready_for_next_blade = input;
     }
+    /// <summary>
+    /// Returns whether the next sample object can be rendered.
+    /// </summary>
+    /// <returns>True when ready.</returns>
     public bool get_ready_for_next_blade()
     {
         return ready_for_next_blade;
     }
 
+    /// <summary>
+    /// Returns whether the sample is visible (texture coordinates initialised).
+    /// </summary>
+    /// <returns>True if visible.</returns>
     public bool get_visible()
     {
         return is_visible;
     }
+    /// <summary>
+    /// Marks the sample as visible (texture coordinates initialised).
+    /// </summary>
+    /// <param name="input">True if visible.</param>
     public void set_visible(bool input)
     {
         is_visible = input;
     }
 
+    /// <summary>
+    /// Path of the mesh file of a time step: the legacy folder under the base path if it exists, otherwise Assets/verts; converts an STL export on demand.
+    /// </summary>
+    /// <param name="idx">Time step (frame) of the simulation.</param>
+    /// <returns>Path of verts_&lt;idx&gt;.txt.</returns>
     public string blade_path_for_idx(int idx)
     {
         // info (paul): dir from lsdyna: C:\Users\go73jem\Desktop\nakajima_full\stl\
@@ -1902,16 +2298,29 @@ public class vis_3D : MonoBehaviour
 
     //24092026 Frames (Zeitschritte der Probe) zur Laufzeit waehlen. blade_idxs = Frames + Platzhalter,
     //  weil with_dt je Paar t, t+1, t+2 liest (bei 2 Frames wie bisher der erste, sonst der letzte).
+    /// <summary>
+    /// Returns the frames (time steps) of the analysis without the internal placeholder entry.
+    /// </summary>
+    /// <returns>List of frames.</returns>
     public List<int> get_frames()
     {
         return blade_idxs.Take(Math.Max(0, blade_idxs.Count - 1)).ToList();
     }
 
+    /// <summary>
+    /// Describes the frames for reports, e.g. 1 -&gt; 27.
+    /// </summary>
+    /// <returns>Description text.</returns>
     public string describe_frames()
     {
         return string.Join(" -> ", get_frames());
     }
 
+    /// <summary>
+    /// Converts frames to the internal index list (frames plus a placeholder needed by the pairwise evaluation).
+    /// </summary>
+    /// <param name="frames">Frames of the analysis.</param>
+    /// <returns>Internal index list.</returns>
     static List<int> frames_to_blade_idxs(List<int> frames)
     {
         List<int> idxs = new List<int>(frames);
@@ -1920,6 +2329,13 @@ public class vis_3D : MonoBehaviour
     }
 
     // "28, 29", "28 29", "28;29", "28 -> 29" oder Bereich "27-29" (= 27, 28, 29)
+    /// <summary>
+    /// Parses frames from text such as 28, 29 or 28 -&gt; 29 or a range 27-29.
+    /// </summary>
+    /// <param name="text">Input text.</param>
+    /// <param name="frames">Receives the parsed frames.</param>
+    /// <param name="msg">Receives an error message.</param>
+    /// <returns>True if the input is valid.</returns>
     static bool try_parse_frames(string text, out List<int> frames, out string msg)
     {
         frames = new List<int>();
@@ -1958,6 +2374,11 @@ public class vis_3D : MonoBehaviour
     }
 
     // Rueckgabe: Meldung fuer das Ergebnisfenster
+    /// <summary>
+    /// Sets the frames of the analysis from text (not while an analysis is running) and checks that the meshes exist.
+    /// </summary>
+    /// <param name="text">Input text of the Frames field.</param>
+    /// <returns>Message for the result window.</returns>
     public string set_frames_from_text(string text)
     {
         if (get_is_started())
@@ -1994,6 +2415,10 @@ public class vis_3D : MonoBehaviour
     }
 
     //24092026 Ordner, in denen nach STL-Exporten (t_<n>_stl.stl) gesucht wird
+    /// <summary>
+    /// Folders that are searched for STL exports (project/stls and Downloads/nakajima_stls).
+    /// </summary>
+    /// <returns>List of folders.</returns>
     static List<string> stl_search_dirs()
     {
         string project = System.IO.Path.GetFullPath(UnityEngine.Application.dataPath + "/..");
@@ -2006,6 +2431,12 @@ public class vis_3D : MonoBehaviour
     //  scripts/stl2verts.py, an t_30 <-> verts_30 ueberprueft: nur "Blech_innen", danach
     //  "Nh_Bereich_fest", alle Eckpunkte in STL-Reihenfolge, "x y z" mit 5 Nachkommastellen, \r\n.
     //  Rueckgabe true, wenn out_path geschrieben wurde.
+    /// <summary>
+    /// Converts the STL export t_&lt;idx&gt;_stl.stl into the mesh format (sample parts only, vertex order preserved), like scripts/stl2verts.py.
+    /// </summary>
+    /// <param name="idx">Time step.</param>
+    /// <param name="out_path">Path of the mesh file to write.</param>
+    /// <returns>True if the file was written.</returns>
     bool convert_stl_for_idx(int idx, string out_path)
     {
         string stl = null;
@@ -2078,6 +2509,11 @@ public class vis_3D : MonoBehaviour
 
     //23092026 path_base bestimmen: 1) erste Zeile von <Projekt>/path_base.txt, 2) alter Pfad auf Pauls Rechner,
     //  3) Ordner über dem Projekt. Rückgabe immer mit "/" am Ende.
+    /// <summary>
+    /// Determines the base path: first line of path_base.txt in the project, else a legacy path, else the folder above the project.
+    /// </summary>
+    /// <param name="project_dir">Project folder.</param>
+    /// <returns>Base path ending with a slash.</returns>
     string resolve_path_base(string project_dir)
     {
         string candidate = null;
@@ -2107,11 +2543,19 @@ public class vis_3D : MonoBehaviour
         return candidate;
     }
 
+    /// <summary>
+    /// Sets the folder of the stereo results.
+    /// </summary>
+    /// <param name="new_path">Folder path.</param>
     public void set_path_stereo(string new_path)
     {
         this.path_stereo = new_path;
     }
 
+    /// <summary>
+    /// Returns the folder of the stereo results.
+    /// </summary>
+    /// <returns>Folder path.</returns>
     public string get_path_stereo()
     {
         return path_stereo;
@@ -2121,25 +2565,45 @@ public class vis_3D : MonoBehaviour
     //    this.path_time_flow_u = new_path;
     //}
 
+    /// <summary>
+    /// Returns the folder of the flow maps of component u.
+    /// </summary>
+    /// <returns>Folder path.</returns>
     public string get_path_time_flow_u()
     {
         return path_time_flow_u;
     }
 
+    /// <summary>
+    /// Sets the folder of the flow maps of component u.
+    /// </summary>
+    /// <param name="new_path">Folder path.</param>
     public void set_path_time_flow_u(string new_path)
     {
         this.path_time_flow_u = new_path;
     }
 
+    /// <summary>
+    /// Returns the folder of the flow maps of component v.
+    /// </summary>
+    /// <returns>Folder path.</returns>
     public string get_path_time_flow_v()
     {
         return path_time_flow_v;
     }
 
+    /// <summary>
+    /// Sets the folder of the flow maps of component v.
+    /// </summary>
+    /// <param name="new_path">Folder path.</param>
     public void set_path_time_flow_v(string new_path)
     {
         this.path_time_flow_v = new_path;
     }
+    /// <summary>
+    /// Sets the default display parameters (flat display, component, strain mode, time index, resolution, ...).
+    /// </summary>
+    /// <param name="blade_idxs">Internal index list of the frames.</param>
     public void init_params(List<int> blade_idxs)
     {
         // info (paul): set default values for parameters; 
@@ -2164,107 +2628,206 @@ public class vis_3D : MonoBehaviour
         set_match_steps(1);//1//2//15062024 6);
     }
 
+    /// <summary>
+    /// Registers the time-step control of the scene UI.
+    /// </summary>
+    /// <param name="t_control_input">Time-step control.</param>
     public void init_t_control(T_control_script t_control_input)
     {
         this.t_control = t_control_input;
     }
+    /// <summary>
+    /// Registers the matching-steps control of the scene UI.
+    /// </summary>
+    /// <param name="match_control">Matching-steps control.</param>
     public void init_match_control(Match_steps match_control)
     {
         this.match_control = match_control;
     }
 
+    /// <summary>
+    /// Registers the strain-mode control of the scene UI.
+    /// </summary>
+    /// <param name="input">Strain-mode control.</param>
     public void init_strain_control(Strain input)
     {
         this.strain_control = input;
     }
+    /// <summary>
+    /// Registers the component control of the scene UI.
+    /// </summary>
+    /// <param name="input">Component control.</param>
     public void init_u_v_control(U_V input)
     {
         this.u_v_control = input;
     }
+    /// <summary>
+    /// Registers the experiment control of the scene UI.
+    /// </summary>
+    /// <param name="input">Experiment control.</param>
     public void init_experiment_control(Experiment_Control input)
     {
         this.experiment_control = input;
     }
+    /// <summary>
+    /// Registers the strain-direction control of the scene UI.
+    /// </summary>
+    /// <param name="input">Strain-direction control.</param>
     public void init_strain_d_control(Strain_D input)
     {
         this.strain_d = input;
     }
 
+    /// <summary>
+    /// Returns the texture coordinates of the sample in the first frame.
+    /// </summary>
+    /// <returns>Texture coordinates per vertex.</returns>
     public Vector2[] get_uv_start()
     {
         return this.uv_start;
     }
+    /// <summary>
+    /// Stores the texture coordinates of the sample in the first frame (they attach the texture to the material).
+    /// </summary>
+    /// <param name="input">Texture coordinates per vertex.</param>
     public void set_uv_start(Vector2[] input)
     {
         this.uv_start = input;
     }
+    /// <summary>
+    /// Enables the flat display of maps (plane instead of the 3D surface).
+    /// </summary>
+    /// <param name="force_flat_input">True for the flat display.</param>
     public void set_force_flat(bool force_flat_input)
     {
         force_flat = force_flat_input;
     }
+    /// <summary>
+    /// Sets the horizontal display resolution.
+    /// </summary>
+    /// <param name="res_x_input">Width in pixels.</param>
     public void set_res_x(int res_x_input)
     {
         res_x = res_x_input;
     }
+    /// <summary>
+    /// Sets the vertical display resolution.
+    /// </summary>
+    /// <param name="res_y_input">Height in pixels.</param>
     public void set_res_y(int res_y_input)
     {
         res_y = res_y_input;
     }
+    /// <summary>
+    /// Sets the number of images of the current sequence.
+    /// </summary>
+    /// <param name="im_cnt_input">Number of images.</param>
     public void set_im_cnt(int im_cnt_input)
     {
         im_cnt = im_cnt_input;
     }
+    /// <summary>
+    /// Sets the displayed time index.
+    /// </summary>
+    /// <param name="t_idx_input">Time index.</param>
     public void set_t_idx(int t_idx_input)
     {
         t_idx = t_idx_input;
     }
+    /// <summary>
+    /// Sets the strain display mode (normal or derivatives).
+    /// </summary>
+    /// <param name="input">Strain mode.</param>
     public void set_strain_mode(string input)
     {
         strain_mode = input;
     }
+    /// <summary>
+    /// Sets the displayed component (u, v, or z).
+    /// </summary>
+    /// <param name="input">Component.</param>
     public void set_u_v_mode(string input)
     {
         u_v_mode = input;
     }
+    /// <summary>
+    /// Sets the derivative direction of the strain display (x or y).
+    /// </summary>
+    /// <param name="input">Direction.</param>
     public void set_strain_d_mode(string input)
     {
         strain_d_mode = input;
     }
 
+    /// <summary>
+    /// Returns the displayed component.
+    /// </summary>
+    /// <returns>u, v, or z.</returns>
     public string get_u_v_mode()
     {
         return u_v_mode;
     }
 
+    /// <summary>
+    /// Returns whether maps are displayed flat.
+    /// </summary>
+    /// <returns>True for the flat display.</returns>
     public bool get_force_flat()
     {
         return force_flat;
     }
+    /// <summary>
+    /// Returns the horizontal display resolution.
+    /// </summary>
+    /// <returns>Width in pixels.</returns>
     public int get_res_x()
     {
         return res_x;
     }
+    /// <summary>
+    /// Returns the vertical display resolution.
+    /// </summary>
+    /// <returns>Height in pixels.</returns>
     public int get_res_y()
     {
         return res_y;
     }
+    /// <summary>
+    /// Returns the number of images of the current sequence.
+    /// </summary>
+    /// <returns>Number of images.</returns>
     public int get_im_cnt()
     {
         return im_cnt;
     }
+    /// <summary>
+    /// Returns the displayed time index.
+    /// </summary>
+    /// <returns>Time index.</returns>
     public int get_t_idx()
     {
         return t_idx;
     }
+    /// <summary>
+    /// Returns the strain display mode.
+    /// </summary>
+    /// <returns>Strain mode.</returns>
     public string get_strain_mode()
     {
         return strain_mode;
     }
+    /// <summary>
+    /// Returns the derivative direction of the strain display.
+    /// </summary>
+    /// <returns>x or y.</returns>
     public string get_strain_d_mode()
     {
         return strain_d_mode;
     }
 
+    /// <summary>
+    /// Legacy export of all maps needed for the manuscript figures.
+    /// </summary>
     public void save_all()
     {
         // info (paul): save all images, that the paper may need, in the corresponding directories
@@ -2276,6 +2839,11 @@ public class vis_3D : MonoBehaviour
         refresh_plane_with_params();
     }
 
+    /// <summary>
+    /// Creates empty triangle lists for the sample objects.
+    /// </summary>
+    /// <param name="blades_cnt">Number of objects (-1 = number of frames).</param>
+    /// <returns>List of empty triangle arrays.</returns>
     public List<int[]> init_tris_empty(int blades_cnt = -1)
     {
         List<int[]> blade_tris = new List<int[]>();
@@ -2293,6 +2861,11 @@ public class vis_3D : MonoBehaviour
         return blade_tris;
     }
     //21092026 true, wenn fuer Experiment + aktuelle Aufloesung TV-Flussfelder vorliegen.
+    /// <summary>
+    /// Checks whether flow results exist for the current experiment and resolution.
+    /// </summary>
+    /// <param name="missing_path">Receives the path that was checked.</param>
+    /// <returns>True if the flow maps exist.</returns>
     public bool flow_results_available(out string missing_path)
     {
         missing_path = path_dic + remove_dots(get_experiment()) + "/time_flow_u/time_flow_u_0_r"
@@ -2300,6 +2873,12 @@ public class vis_3D : MonoBehaviour
         return File.Exists(missing_path);
     }
 
+    /// <summary>
+    /// Rebuilds the displayed map (value, reference, or error of the chosen component, strain, or depth) on the sample or the flat plane; shows a message if no results exist for the resolution.
+    /// </summary>
+    /// <param name="path_time_flow_v">Folder of the flow maps (null = default).</param>
+    /// <param name="t_idx">Time index (-1 = current).</param>
+    /// <param name="with_save">True to save the displayed map.</param>
     public void refresh_plane_with_params(
         string path_time_flow_v = null,
         int t_idx = -1, bool with_save = false)
@@ -2372,6 +2951,9 @@ public class vis_3D : MonoBehaviour
     private List<List<float>> batch_ref_u, batch_ref_v, batch_ref_z, batch_value_u, batch_value_v;
     private float batch_coverage_ref, batch_value_coverage;
 
+    /// <summary>
+    /// Starts a batch of display refreshes that share intermediate results (e.g. u and v in one export).
+    /// </summary>
     void begin_refresh_batch()
     {
         if (refresh_batch_depth == 0)
@@ -2379,6 +2961,9 @@ public class vis_3D : MonoBehaviour
         refresh_batch_depth++;
     }
 
+    /// <summary>
+    /// Ends a batch of display refreshes and clears the shared intermediate results.
+    /// </summary>
     void end_refresh_batch()
     {
         refresh_batch_depth = Math.Max(0, refresh_batch_depth - 1);
@@ -2386,6 +2971,9 @@ public class vis_3D : MonoBehaviour
             clear_refresh_batch();
     }
 
+    /// <summary>
+    /// Clears the intermediate results shared within a refresh batch.
+    /// </summary>
     void clear_refresh_batch()
     {
         batch_heights = null;
@@ -2394,6 +2982,10 @@ public class vis_3D : MonoBehaviour
         batch_ref_u = batch_ref_v = batch_ref_z = batch_value_u = batch_value_v = null;
     }
 
+    /// <summary>
+    /// Recomputes and displays the reference map of the flow.
+    /// </summary>
+    /// <param name="with_save">True to save the map.</param>
     private void refresh_uv_ground_truth_with_params(bool with_save)
     {
         string flow_root = get_path_time_flow_v();
@@ -2405,6 +2997,10 @@ public class vis_3D : MonoBehaviour
     //unabhaengig von der aktuellen Einstellung im u/v-Panel; diese wird danach wiederhergestellt.
     //23092026 restore = false: Ansicht danach nicht neu aufbauen (spart einen Refresh je Modus
     //  in save_accuracy_analysis, das am Ende selbst einmal neu aufbaut).
+    /// <summary>
+    /// Exports the maps of both components u and v, independent of the component selected in the display.
+    /// </summary>
+    /// <param name="restore">True to rebuild the previous display afterwards.</param>
     public void save_maps_u_and_v(bool restore = true)
     {
         string mode_before = get_u_v_mode();
@@ -2433,6 +3029,9 @@ public class vis_3D : MonoBehaviour
     //  loss_abs = | |u| - |u_ref| |, loss_rel = loss_abs / |u_ref|, mit der bisherigen Maske.
     //  Bias/RMSE/MAE/corr werden zusaetzlich aus der vorzeichenbehafteten Differenz u - u_ref
     //  gerechnet (wie scripts/tv_error.py).
+    /// <summary>
+    /// Accuracy analysis (button Genauigkeit): loads the flow and the mesh reference once, computes value, reference, absolute and relative error for u and v, strain maps, and statistics, writes the raw float maps to nice_pics, and shows panels and report in the gallery.
+    /// </summary>
     public void save_accuracy_analysis()
     {
         string missing;
@@ -2560,6 +3159,13 @@ public class vis_3D : MonoBehaviour
     //  Pipeline (Randglaettung + Mittelwertfilter, siehe find_total_match_tex), Kodierung wie save_tex
     //  (norm_mat + mat2tex, damit "Bilder: Laden" und scripts/figure_accuracy.py sie lesen koennen),
     //  eingefaerbte Einzelkarten in die Galerie, dazu das 2x2-Panel. Rueckgabe: Pfad des Panels.
+    /// <summary>
+    /// Exports the maps of one component for the accuracy analysis (individual maps and a 2x2 panel) and adds them to the gallery.
+    /// </summary>
+    /// <param name="comp">Component u or v.</param>
+    /// <param name="modes">Map types (value, value_ref, loss_abs, loss_rel).</param>
+    /// <param name="maps">Maps of both components per type.</param>
+    /// <returns>Path of the panel image.</returns>
     string export_accuracy_component(string comp, string[] modes,
         Dictionary<string, (List<List<float>> u, List<List<float>> v)> maps)
     {
@@ -2686,6 +3292,13 @@ public class vis_3D : MonoBehaviour
     //  Matrix-Konvention wie ueberall: m[i][j] = Pixel (x = i, y = j). d_dx: d/dx (i), sonst d/dy (j).
     //  Fehler: abs = |e - e_ref| (mit Vorzeichen verglichen), rel = abs / |e_ref|, maskiert wo
     //  |e_ref| < 10 % von max |e_ref|. Rand (10 px) und Pixel mit NaN-Nachbarn -> NaN.
+    /// <summary>
+    /// Strain of a displacement map and of its reference by central differences, with absolute and relative error (relative masked where the reference strain is below 10 % of its maximum).
+    /// </summary>
+    /// <param name="val">Measured displacement map.</param>
+    /// <param name="gt">Reference displacement map.</param>
+    /// <param name="d_dx">True for the x derivative, false for y.</param>
+    /// <returns>Tuple (strain, reference strain, absolute error, relative error).</returns>
     (List<List<float>>, List<List<float>>, List<List<float>>, List<List<float>>) strain_maps(
         List<List<float>> val, List<List<float>> gt, bool d_dx)
     {
@@ -2740,7 +3353,15 @@ public class vis_3D : MonoBehaviour
     //27092026 Gauss-Glaettung vor dem Ableiten der Dehnung (sigma in px, PlayerPrefs "strain_sigma",
     //  einstellbar im TV-Parameter-Panel). Default 12 px.
     private float strain_sigma = 12f; //27092026 Default 4 -> 12 px (strain_sweep: exx-Fehler 14.6 % -> 7.5 %)
+    /// <summary>
+    /// Returns the Gaussian smoothing applied before differentiation.
+    /// </summary>
+    /// <returns>Standard deviation in pixels.</returns>
     public float get_strain_sigma() { return strain_sigma; }
+    /// <summary>
+    /// Sets and stores the Gaussian smoothing applied before differentiation (invalid values give the default 12 px).
+    /// </summary>
+    /// <param name="sigma">Standard deviation in pixels (0 = off).</param>
     public void set_strain_sigma(float sigma)
     {
         strain_sigma = (float.IsNaN(sigma) || sigma < 0f) ? 12f : sigma;
@@ -2751,6 +3372,12 @@ public class vis_3D : MonoBehaviour
     //27092026 Separable Gauss-Glaettung mit NaN-Behandlung (normierte Faltung): NaN-Pixel zaehlen nicht mit,
     //  Pixel, deren Fenster zu weniger als der Haelfte gueltig ist, werden NaN (Probenrand bleibt scharf).
     //  Konvention m[i][j]; Radius 3 sigma.
+    /// <summary>
+    /// Separable Gaussian smoothing that ignores NaN pixels (normalised convolution); pixels with less than half valid weight become NaN.
+    /// </summary>
+    /// <param name="m">Map m[i][j].</param>
+    /// <param name="sigma">Standard deviation in pixels.</param>
+    /// <returns>Smoothed map.</returns>
     static List<List<float>> gaussian_nan(List<List<float>> m, float sigma)
     {
         int n = m.Count, w = m[0].Count;
@@ -2814,6 +3441,11 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Karte als float32-Rohdatei (siehe save_accuracy_analysis)
+    /// <summary>
+    /// Writes a map as raw float32 file (int magic, n, m, then values; see docs/data_formats.md).
+    /// </summary>
+    /// <param name="m">Map m[i][j] with i = image column.</param>
+    /// <param name="path">Output file.</param>
     static void write_raw_map(List<List<float>> m, string path)
     {
         try
@@ -2837,6 +3469,13 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Quantil q (0..1) der endlichen Werte einer Karte (optional von |Wert|); NaN, wenn keine Werte
+    /// <summary>
+    /// Quantile of the finite values of a map.
+    /// </summary>
+    /// <param name="m">Map.</param>
+    /// <param name="q">Quantile in 0..1.</param>
+    /// <param name="absolute">True to use absolute values.</param>
+    /// <returns>Quantile, or NaN if there are no finite values.</returns>
     static float quantile_of(List<List<float>> m, double q, bool absolute = false)
     {
         List<float> vals = new List<float>();
@@ -2852,6 +3491,12 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 log10 einer Fehlerkarte mit Untergrenze (Werte darunter, auch 0, -> log10(floor)); NaN bleibt NaN
+    /// <summary>
+    /// Base-10 logarithm of an error map with a lower limit.
+    /// </summary>
+    /// <param name="m">Error map.</param>
+    /// <param name="floor">Lower limit (smaller values and zero are set to it).</param>
+    /// <returns>Logarithmic map.</returns>
     static List<List<float>> log10_map(List<List<float>> m, float floor)
     {
         List<List<float>> lg = new List<List<float>>(m.Count);
@@ -2866,6 +3511,12 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Grenzen fuer Kodierung/Dekodierung einer Karte (wie norm_mat: 0 als Grenze vermeiden)
+    /// <summary>
+    /// Value range used to encode and decode a map as image (zero is avoided as a bound, as in norm_mat).
+    /// </summary>
+    /// <param name="m">Map.</param>
+    /// <param name="mode">Map type (log_ prefix for logarithmic maps).</param>
+    /// <returns>Tuple (minimum, maximum).</returns>
     (float, float) encoding_range(List<List<float>> m, string mode)
     {
         bool is_log = mode.StartsWith("log_");
@@ -2883,6 +3534,14 @@ public class vis_3D : MonoBehaviour
 
     //27092026 Matrix -> eingefaerbte Zelle mit Farbbalken (Kodierung wie save_tex, dann colorize_encoded_map);
     //  scale_min/scale_max optional fuer eine gemeinsame Skala mehrerer Zellen
+    /// <summary>
+    /// Renders a map as coloured cell with colour bar.
+    /// </summary>
+    /// <param name="m">Map.</param>
+    /// <param name="mode">Map type (defines colour map and label).</param>
+    /// <param name="scale_min">Optional common lower bound of the colour scale.</param>
+    /// <param name="scale_max">Optional common upper bound of the colour scale.</param>
+    /// <returns>Coloured texture.</returns>
     Texture2D colorize_matrix(List<List<float>> m, string mode, float scale_min = float.NaN, float scale_max = float.NaN)
     {
         (float mn, float mx) = encoding_range(m, mode);
@@ -2893,6 +3552,12 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Zellen zeilenweise (2 Spalten) zu einem Panel zusammensetzen, speichern, Zellen freigeben
+    /// <summary>
+    /// Arranges cells in rows of two into one panel image, saves it, and releases the cells.
+    /// </summary>
+    /// <param name="cells_tex">Cells in reading order.</param>
+    /// <param name="panel_path">Output file.</param>
+    /// <returns>Path of the panel.</returns>
     string compose_panel(Texture2D[] cells_tex, string panel_path)
     {
         int cw = cells_tex[0].width;
@@ -2953,6 +3618,10 @@ public class vis_3D : MonoBehaviour
 
     private bool param_study_running = false;
     private bool param_study_cancel = false;
+    /// <summary>
+    /// Returns whether the parameter study is running.
+    /// </summary>
+    /// <returns>True while the study runs.</returns>
     public bool is_param_study_running() { return param_study_running; }
     //27092026 Bugfix: statisch, damit auch bei "Reload Domain disabled" (Enter Play Mode Options) keine zweite
     //  Studie parallel starten kann - eine Studie aus einer frueheren Play-Sitzung lief sonst weiter, beide
@@ -2960,8 +3629,15 @@ public class vis_3D : MonoBehaviour
     private static bool s_param_study_active = false;
     private static bool s_param_study_cancel = false;
 
+    /// <summary>
+    /// Folder of the study results (Assets/analysis_results/).
+    /// </summary>
+    /// <returns>Folder path.</returns>
     string param_study_dir() { return path_dic + "/analysis_results/"; }
 
+    /// <summary>
+    /// Runs the numerical parameter study on the current image pair: varies lambda, theta, pyramid levels, warps, stopping tolerance, and regulariser one at a time around the reference, evaluates each run like the accuracy analysis, and writes param_study_latest.tsv and plots. A second call stops after the current run.
+    /// </summary>
     public async void run_param_study()
     {
         if (param_study_running || s_param_study_active)
@@ -3162,6 +3838,10 @@ public class vis_3D : MonoBehaviour
         await show_param_study(regenerate_plots: true);
     }
 
+    /// <summary>
+    /// Applies the solver settings of one run of the parameter study.
+    /// </summary>
+    /// <param name="c">Settings of the run.</param>
     void apply_study_config(StudyConfig c)
     {
         tv_lambda_override = c.lambda;
@@ -3174,6 +3854,11 @@ public class vis_3D : MonoBehaviour
         tgv_ratio = c.ratio;
     }
 
+    /// <summary>
+    /// Describes the solver settings of a run for the log.
+    /// </summary>
+    /// <param name="c">Settings of the run.</param>
+    /// <returns>Description text.</returns>
     static string describe_study_config(StudyConfig c)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -3184,6 +3869,10 @@ public class vis_3D : MonoBehaviour
 
     //27092026 Kennzahlen eines Laufs (wie "Genauigkeit", ohne Karten): Fluss u/v gegen Ground Truth und
     //  Dehnungen exx/eyy (mit dem aktuellen Strain-sigma)
+    /// <summary>
+    /// Error measures of the current run without maps: flow u and v against the reference and strains exx and eyy with the current strain smoothing (bias, RMSE, MAE, correlation, relative MAE).
+    /// </summary>
+    /// <returns>Dictionary of named measures.</returns>
     Dictionary<string, double> compute_study_metrics()
     {
         Dictionary<string, double> r = new Dictionary<string, double>();
@@ -3276,6 +3965,11 @@ public class vis_3D : MonoBehaviour
     //  (which = "lighting": alle Stufen aus lighting_sweep.tsv). Nutzt die vorhandenen Bilder beider Kameras,
     //  rechnet nur den Stereo-Schritt (TV mit den aktuellen Einstellungen) und schreibt depth_results.tsv.
     //30092026 Stufen fuer Hoehen- bzw. 3D-Flussanalyse (aus run_stereo ausgelagert, unveraendert)
+    /// <summary>
+    /// Stages for depth or 3D-displacement analysis: the standard analysis (normal) or all stages of the lighting, speckle, or noise table that have an experiment folder.
+    /// </summary>
+    /// <param name="which">normal, lighting, speckle, or noise.</param>
+    /// <returns>List of (label, parameters).</returns>
     List<(string label, Params pars)> collect_stereo_jobs(string which)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -3321,6 +4015,10 @@ public class vis_3D : MonoBehaviour
         return jobs;
     }
 
+    /// <summary>
+    /// Depth analysis (buttons Hoehe): computes the stereo depth for the selected stages, keeps the array-to-screen mapping of the reference stage for all stages, writes depth_results.tsv, and shows the map panels in the gallery.
+    /// </summary>
+    /// <param name="which">normal, lighting, speckle, or noise.</param>
     public async void run_stereo(string which)
     {
         if (stereo_running) { Debug.LogWarning("Hoehenanalyse laeuft bereits."); return; }
@@ -3415,6 +4113,12 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Formats a numeric table cell, optionally scaled.
+    /// </summary>
+    /// <param name="s">Cell text.</param>
+    /// <param name="factor">Scale factor (e.g. 100 for percent).</param>
+    /// <returns>Formatted number, or the input if it is not a number.</returns>
     static string fmt_num(string s, double factor)
     {
         return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d)
@@ -3426,6 +4130,12 @@ public class vis_3D : MonoBehaviour
     const string DEPTH_HEADER_LEGACY = "experiment\tlighting_intensity\tpeak_electrons\tspeckle_size\tframe\tdepth_mae_mm"
         + "\tdepth_bias_mm\tdepth_rel_mae\tdepth_rel_relief\tn_px\tref_mean_mm\trender_res\tregularization\tstrain_sigma";
 
+    /// <summary>
+    /// Legacy depth computation from the disparity with the old angle formula (does not match the current camera setup; kept for traceability).
+    /// </summary>
+    /// <param name="proj_dir">Experiment folder.</param>
+    /// <param name="pars">Parameters of the stage.</param>
+    /// <param name="pos">Frame position.</param>
     async Task stereo_depth_step_legacy(string proj_dir, Params pars, int pos = 1)
     {
         const string DEPTH_HEADER = DEPTH_HEADER_LEGACY;
@@ -3544,6 +4254,11 @@ public class vis_3D : MonoBehaviour
     //29092026 Projektion und Triangulation direkt ueber die Kameramatrizen (projectionMatrix * worldToCameraMatrix,
     //  wie beim Rendern), doppelte Genauigkeit. Grund: WorldToViewportPoint/ViewportPointToRay ergaben eine
     //  konstante Querverschiebung von 3.2 px gegenueber den Bildern und einen Selbsttestfehler von 0.16 mm.
+    /// <summary>
+    /// Camera matrix P*V (projection times world-to-camera) in double precision, as used for rendering.
+    /// </summary>
+    /// <param name="c">Camera.</param>
+    /// <returns>4x4 matrix.</returns>
     static double[,] cam_matrix(Camera c)
     {
         UnityEngine.Matrix4x4 m = c.projectionMatrix * c.worldToCameraMatrix; // explizit: auch System.Numerics ist eingebunden
@@ -3553,6 +4268,11 @@ public class vis_3D : MonoBehaviour
     }
     //29092026 4x4-Inverse in doppelter Genauigkeit (Gauss-Jordan). Die float-Inverse der Projektionsmatrix
     //  (near 0.3, sehr grosser far) war zu ungenau: Treffer lagen 1.6 px neben der Pixelmitte.
+    /// <summary>
+    /// Inverse of a 4x4 matrix in double precision (Gauss-Jordan with pivoting).
+    /// </summary>
+    /// <param name="M">Matrix to invert.</param>
+    /// <returns>Inverse matrix.</returns>
     static double[,] invert4(double[,] M)
     {
         var a = new double[4, 8];
@@ -3575,6 +4295,14 @@ public class vis_3D : MonoBehaviour
         for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) inv[i, j] = a[i, 4 + j];
         return inv;
     }
+    /// <summary>
+    /// Transforms a point from normalised device coordinates back to world coordinates.
+    /// </summary>
+    /// <param name="inv">Inverse camera matrix.</param>
+    /// <param name="u">x in NDC (-1..1).</param>
+    /// <param name="v">y in NDC (-1..1).</param>
+    /// <param name="z">Depth in NDC (-1 = near plane).</param>
+    /// <returns>World point.</returns>
     static Vector3 unproject(double[,] inv, double u, double v, double z)
     {
         double[] q = { u, v, z, 1 };
@@ -3587,6 +4315,13 @@ public class vis_3D : MonoBehaviour
     //  z=0) entprojizieren und die Richtung aus ihrer double-Differenz bilden. Vorher: Richtung = float(p_near) - c0 mit
     //  p_near nur ~0.3 Einheiten vor der Kamera bei Weltkoordinaten ~1e3 -> Rundung verdreht den Strahl um ~1e-3 rad
     //  (Log "Abweichung Pixelmitte <-> Matrix-Projektion" 3.2 px statt ~0).
+    /// <summary>
+    /// Ray through a pixel, built entirely in double precision from two unprojected points of the same pixel (near plane and z = 0); every point of the ray projects exactly onto the pixel centre.
+    /// </summary>
+    /// <param name="inv">Inverse camera matrix.</param>
+    /// <param name="u_ndc">x of the pixel centre in NDC.</param>
+    /// <param name="v_ndc">y of the pixel centre in NDC.</param>
+    /// <returns>Ray in world coordinates.</returns>
     static Ray pixel_ray(double[,] inv, double u_ndc, double v_ndc)
     {
         double[] a = new double[3], b = new double[3];
@@ -3601,6 +4336,12 @@ public class vis_3D : MonoBehaviour
         return new Ray(new Vector3((float)a[0], (float)a[1], (float)a[2]), new Vector3((float)(dx / dn), (float)(dy / dn), (float)(dz / dn)));
     }
 
+    /// <summary>
+    /// Projects a world point with a camera matrix to viewport coordinates.
+    /// </summary>
+    /// <param name="M">Camera matrix P*V.</param>
+    /// <param name="P">World point.</param>
+    /// <returns>Viewport coordinates (x, y) in 0..1.</returns>
     static (double x, double y) project_vp(double[,] M, Vector3 P)
     {
         double cx = M[0, 0] * P.x + M[0, 1] * P.y + M[0, 2] * P.z + M[0, 3];
@@ -3609,6 +4350,16 @@ public class vis_3D : MonoBehaviour
         return (0.5 * (cx / cw + 1.0), 0.5 * (cy / cw + 1.0));
     }
     // lineare Triangulation (DLT, kleinste Quadrate) aus zwei Viewport-Punkten
+    /// <summary>
+    /// Linear triangulation (DLT, least squares) of a point from its viewport positions in two cameras.
+    /// </summary>
+    /// <param name="M0">Camera matrix of camera 0.</param>
+    /// <param name="x0">Viewport x in camera 0.</param>
+    /// <param name="y0">Viewport y in camera 0.</param>
+    /// <param name="M1">Camera matrix of camera 1.</param>
+    /// <param name="x1">Viewport x in camera 1.</param>
+    /// <param name="y1">Viewport y in camera 1.</param>
+    /// <returns>World point (X, Y, Z), NaN if degenerate.</returns>
     static (double X, double Y, double Z) triangulate_dlt(double[,] M0, double x0, double y0, double[,] M1, double x1, double y1)
     {
         var A = new double[4, 4];
@@ -3635,6 +4386,12 @@ public class vis_3D : MonoBehaviour
         return (Dx / det, Dy / det, Dz / det);
     }
 
+    /// <summary>
+    /// Midpoint of the shortest connection between two rays.
+    /// </summary>
+    /// <param name="a">First ray (normalised direction).</param>
+    /// <param name="b">Second ray (normalised direction).</param>
+    /// <returns>Midpoint, NaN for parallel rays.</returns>
     static Vector3 ray_midpoint(Ray a, Ray b)
     {
         Vector3 w0 = a.origin - b.origin;
@@ -3645,6 +4402,13 @@ public class vis_3D : MonoBehaviour
         return 0.5f * (a.origin + (float)s * a.direction + b.origin + (float)t * b.direction);
     }
 
+    /// <summary>
+    /// Reference for the stereo depth: ray casting per pixel of camera 0 onto a freshly loaded mesh of the frame gives the distance and the exact disparity; includes self-tests (cached per frame, resolution, and camera pose).
+    /// </summary>
+    /// <param name="pos">Frame position.</param>
+    /// <param name="W">Image width.</param>
+    /// <param name="H">Image height.</param>
+    /// <returns>True if the reference could be computed.</returns>
     bool stereo_ground_truth(int pos, int W, int H)
     {
         string key = pos + "_" + W + "x" + H + "_" + cam_for_uv_0.transform.position + cam_for_uv_1.transform.position
@@ -3729,6 +4493,12 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Stereo depth of one stage: TV flow from camera 0 to camera 1, mapping of the flow array to screen axes against the exact disparity, DLT triangulation per pixel, comparison with the reference, raw maps and a row of depth_results.tsv.
+    /// </summary>
+    /// <param name="proj_dir">Experiment folder.</param>
+    /// <param name="pars">Parameters of the stage.</param>
+    /// <param name="pos">Frame position (default 1 = second frame).</param>
     async Task stereo_depth_step(string proj_dir, Params pars, int pos = 1)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -3936,6 +4706,14 @@ public class vis_3D : MonoBehaviour
     float[,,] sf_gt_pa, sf_gt_pb; // Weltkoordinaten (Unity-Einheiten) je cam_0-Pixel [sx, sy, xyz], NaN ohne Treffer
     double sf_bary_check_units = double.NaN;
 
+    /// <summary>
+    /// Reference of the 3D displacement: ray casting per pixel of camera 0 onto the mesh of frame A gives triangle and barycentric coordinates; the same material point on the mesh of frame B gives its new position (cached).
+    /// </summary>
+    /// <param name="pos_a">Position of frame A.</param>
+    /// <param name="pos_b">Position of frame B.</param>
+    /// <param name="W">Image width.</param>
+    /// <param name="H">Image height.</param>
+    /// <returns>True if the reference could be computed.</returns>
     bool scene_flow_ground_truth(int pos_a, int pos_b, int W, int H)
     {
         string key = pos_a + "_" + pos_b + "_" + W + "x" + H + "_" + cam_for_uv_0.transform.position
@@ -4021,6 +4799,14 @@ public class vis_3D : MonoBehaviour
     }
 
     //30092026 TV-Fluss zweier Bilder als Arrays (entnormiert wie in stereo_depth_step); Parameter vorher per set_up_pars
+    /// <summary>
+    /// Computes the TV flow between two images and returns it as de-normalised arrays (solver parameters must be set before).
+    /// </summary>
+    /// <param name="im_a">First image.</param>
+    /// <param name="im_b">Second image.</param>
+    /// <param name="W">Width.</param>
+    /// <param name="H">Height.</param>
+    /// <returns>Tuple (U, V) of flow arrays, or nulls on failure.</returns>
     async Task<(float[,] U, float[,] V)> tv_flow_arrays(List<float> im_a, List<float> im_b, int W, int H)
     {
         List<List<float>> I0 = new List<List<float>> { im_a, im_a };
@@ -4040,6 +4826,16 @@ public class vis_3D : MonoBehaviour
     }
 
     //30092026 TV-Array -> Bildschirm (x rechts, y oben, Pixel) mit Zuordnung (o, m) wie in stereo_depth_step
+    /// <summary>
+    /// Converts flow arrays to screen coordinates (x right, y up, pixels) with a given axis mapping.
+    /// </summary>
+    /// <param name="U">First flow array.</param>
+    /// <param name="V">Second flow array.</param>
+    /// <param name="o">Orientation index (transpose and flips).</param>
+    /// <param name="m">Component index (order and signs).</param>
+    /// <param name="W">Screen width.</param>
+    /// <param name="H">Screen height.</param>
+    /// <returns>Array [x, y, component].</returns>
     static float[,,] flow_to_screen(float[,] U, float[,] V, int o, int m, int W, int H)
     {
         int ni = U.GetLength(0), nj = U.GetLength(1);
@@ -4059,6 +4855,13 @@ public class vis_3D : MonoBehaviour
     }
 
     //30092026 bilinear an kontinuierlicher Bildschirmposition (Pixelmitte von (sx, sy) liegt bei sx + 0.5, sy + 0.5)
+    /// <summary>
+    /// Bilinear sampling of a screen-space flow at a continuous position (pixel centres at +0.5).
+    /// </summary>
+    /// <param name="F">Screen-space flow [x, y, component].</param>
+    /// <param name="px">x position in pixels.</param>
+    /// <param name="py">y position in pixels.</param>
+    /// <returns>Interpolated flow (x, y), NaN outside.</returns>
     static (double x, double y) sample_screen(float[,,] F, double px, double py)
     {
         int W = F.GetLength(0), H = F.GetLength(1);
@@ -4074,6 +4877,16 @@ public class vis_3D : MonoBehaviour
     }
 
     //30092026 alle 64 Zuordnungen gegen eine exakte Bildschirm-Verschiebung bewerten (versatzinvariant, Median)
+    /// <summary>
+    /// Scores all 64 axis mappings of a flow against an exact screen-space displacement (offset-invariant median error).
+    /// </summary>
+    /// <param name="U">First flow array.</param>
+    /// <param name="V">Second flow array.</param>
+    /// <param name="gdx">Exact x displacement per screen pixel.</param>
+    /// <param name="gdy">Exact y displacement per screen pixel.</param>
+    /// <param name="W">Width.</param>
+    /// <param name="H">Height.</param>
+    /// <returns>Mappings sorted by error with their median offsets.</returns>
     static List<(double err, int o, int m, double off_x, double off_y)> score_mappings(float[,] U, float[,] V,
         float[,] gdx, float[,] gdy, int W, int H)
     {
@@ -4100,6 +4913,13 @@ public class vis_3D : MonoBehaviour
         return scores;
     }
 
+    /// <summary>
+    /// 3D displacement of one stage from both cameras: stereo flow in frame A, temporal flow in camera 0 and camera 1, DLT triangulation of both positions, difference in the stereo-rig frame; variant B uses a second stereo flow in frame B; writes raw maps and a row of sceneflow_results.tsv.
+    /// </summary>
+    /// <param name="proj_dir">Experiment folder.</param>
+    /// <param name="pars">Parameters of the stage.</param>
+    /// <param name="pos_a">Position of frame A.</param>
+    /// <param name="pos_b">Position of frame B.</param>
     async Task scene_flow_step(string proj_dir, Params pars, int pos_a = 0, int pos_b = 1)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -4279,6 +5099,10 @@ public class vis_3D : MonoBehaviour
     }
 
     //30092026 Buttons "3D-Fluss: Neu / Licht / Speckle" (Galerie): Ablauf wie run_stereo
+    /// <summary>
+    /// 3D-displacement analysis (buttons 3D-Fluss) for the selected stages, analogous to run_stereo; shows the map panels in the gallery.
+    /// </summary>
+    /// <param name="which">normal, lighting, speckle, or noise.</param>
     public async void run_scene_flow(string which)
     {
         if (stereo_running) { Debug.LogWarning("Hoehen-/3D-Flussanalyse laeuft bereits."); return; }
@@ -4372,6 +5196,12 @@ public class vis_3D : MonoBehaviour
 
     //27092026 Vergleich Wert <-> Referenz im berechneten Fenster (wie accuracy_block):
     //  Anzahl, Bias, RMSE, MAE, Korrelation, mittleres |Referenz|
+    /// <summary>
+    /// Compares a map with its reference inside the evaluated window.
+    /// </summary>
+    /// <param name="val">Measured map.</param>
+    /// <param name="gt">Reference map.</param>
+    /// <returns>Tuple (count, bias, RMSE, MAE, correlation, mean absolute reference).</returns>
     (int, double, double, double, double, double) pair_stats(List<List<float>> val, List<List<float>> gt)
     {
         int c_i = val.Count / 2, c_j = val[0].Count / 2;
@@ -4402,6 +5232,10 @@ public class vis_3D : MonoBehaviour
     //  Je Stufe wird TV/TGV mit den aktuellen Einstellungen gerechnet (cv_main_async ueber im_paths) und wie bei
     //  "Genauigkeit" ausgewertet. Ergebnis: Assets/analysis_results/exposure_study_latest.tsv (+ Zeitstempel),
     //  Plots per scripts/plot_exposure_study.py. Danach wird der Basislauf (Originalbilder) wiederhergestellt.
+    /// <summary>
+    /// Exposure study on the existing camera images: scales them by factors k (8-bit clipping, optional shot noise N=...), computes and evaluates the flow for each stage, writes exposure_study_latest.tsv and plots; afterwards the original images are restored.
+    /// </summary>
+    /// <param name="spec">List of factors, optionally with N=&lt;electrons&gt;.</param>
     public async void run_exposure_study(string spec)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -4614,6 +5448,11 @@ public class vis_3D : MonoBehaviour
     //28092026 Bugfix: k fuer Datei-/Ordnernamen und Anzeige ungerundet (float, bis 9 gueltige Stellen, ohne
     //  Exponentenschreibweise). Vorher "0.####": 0.01662 und 0.01664 wurden beide zu "0.0166" -> Stufen
     //  ueberschrieben sich gegenseitig.
+    /// <summary>
+    /// Unrounded text form of an exposure factor for file names and display.
+    /// </summary>
+    /// <param name="k">Exposure factor.</param>
+    /// <returns>Label text.</returns>
     static string exposure_label(float k)
     {
         string s = ((decimal)k).ToString("0.#############", CultureInfo.InvariantCulture);
@@ -4624,10 +5463,19 @@ public class vis_3D : MonoBehaviour
     //  exposure_bypass: waehrend der Belichtungsstudie aus (deren Bilder sind bereits belichtet).
     private float analysis_exposure = 1f;
     private bool exposure_bypass = false;
+    /// <summary>
+    /// Returns the exposure factor k of the normal analysis.
+    /// </summary>
+    /// <returns>Exposure factor (1 = unmodified images).</returns>
     public float get_analysis_exposure() { return analysis_exposure; }
     //28092026 gueltiger Bereich: jeder Wert > 0 (Nutzerwunsch: beliebig klein, um den Zusammenbruch zu sehen);
     //  obere Grenze nur gegen Tippfehler. Rueckgabe: Wert gueltig
     public const float EXPOSURE_MIN = 1e-9f, EXPOSURE_MAX = 1000f;
+    /// <summary>
+    /// Sets and stores the exposure factor k of the normal analysis (applied to the images before the flow computation, ignored in sweeps).
+    /// </summary>
+    /// <param name="k">Exposure factor (greater than 0).</param>
+    /// <returns>True if the value was valid.</returns>
     public bool set_analysis_exposure(float k)
     {
         bool ok = !float.IsNaN(k) && k >= EXPOSURE_MIN && k <= EXPOSURE_MAX;
@@ -4645,6 +5493,13 @@ public class vis_3D : MonoBehaviour
     }
 
     //28092026 belichtetes TV-Eingangsbild zum Ansehen speichern (Werte 0..1 in Textur-Reihenfolge wie tex2floats)
+    /// <summary>
+    /// Saves the exposed input image of the flow computation for inspection (analysis_results/exposure_images).
+    /// </summary>
+    /// <param name="mat">Gray values 0..1 in texture order.</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <param name="src_path">Path of the original image (for the file name).</param>
     void save_exposed_preview(List<float> mat, int width, int height, string src_path)
     {
         try
@@ -4675,6 +5530,15 @@ public class vis_3D : MonoBehaviour
 
     //28092026 Belichtetes Bild schreiben; Rueckgabe: Mittel/Std des Grauwerts, Anteil gesaettigt/schwarz [%] und
     //  Anzahl genutzter Graustufen (jeweils in der Bildmitte, 50 % der Flaeche)
+    /// <summary>
+    /// Writes an exposed (and optionally noisy) version of an image.
+    /// </summary>
+    /// <param name="png">PNG bytes of the original.</param>
+    /// <param name="out_path">Output file.</param>
+    /// <param name="k">Exposure factor.</param>
+    /// <param name="n_peak">Full-scale electrons for shot noise (0 = off).</param>
+    /// <param name="seed">Random seed of the noise.</param>
+    /// <returns>Tuple (mean, std of the gray value, saturated %, black %, number of gray levels) in the image centre.</returns>
     static (double, double, double, double, int) write_exposed_image(byte[] png, string out_path, float k, float n_peak, int seed)
     {
         Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -4715,6 +5579,10 @@ public class vis_3D : MonoBehaviour
             n > 0 ? 100.0 * n_sat / n : double.NaN, n > 0 ? 100.0 * n_blk / n : double.NaN, used.Count(u => u));
     }
 
+    /// <summary>
+    /// Shows the last exposure study (summary and plots).
+    /// </summary>
+    /// <param name="regenerate_plots">True to regenerate the plots.</param>
     public async Task show_exposure_study(bool regenerate_plots = false)
     {
         string tsv = param_study_dir() + "exposure_study_latest.tsv";
@@ -4784,6 +5652,10 @@ public class vis_3D : MonoBehaviour
 
     //27092026 Letzte Studie anzeigen: Zusammenfassung ins Ergebnisfenster, Plots (matplotlib) in die Galerie.
     //  regenerate_plots: Plot-Skript ausfuehren (sonst nur, wenn Plots fehlen oder aelter als die Tabelle sind)
+    /// <summary>
+    /// Shows the last parameter study: summary in the result window and plots in the gallery.
+    /// </summary>
+    /// <param name="regenerate_plots">True to rerun the plot script (otherwise only if plots are missing or outdated).</param>
     public async Task show_param_study(bool regenerate_plots = false)
     {
         string tsv = param_study_dir() + "param_study_latest.tsv";
@@ -4816,6 +5688,12 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Python-Skript ausfuehren (fuer die Plots); Rueckgabe: "" bei Erfolg, sonst Hinweistext
+    /// <summary>
+    /// Runs a Python script (python, py, or python3) for the plots.
+    /// </summary>
+    /// <param name="script">Path of the script.</param>
+    /// <param name="args">Command-line arguments.</param>
+    /// <returns>Empty string on success, otherwise a hint text.</returns>
     static string run_python(string script, string args)
     {
         foreach (string exe in new[] { "python", "py", "python3" })
@@ -4851,6 +5729,11 @@ public class vis_3D : MonoBehaviour
 
     //27092026 Kurzfassung der Studie fuer das Ergebnisfenster: je Parametergruppe die Werte mit
     //  Fluss-MAE (u, v) und relativem Dehnungsfehler (exx, eyy); bester Wert je Gruppe (min. exx-Fehler) markiert
+    /// <summary>
+    /// Short summary of the parameter study: per parameter group the values with flow MAE and relative strain error; the best value per group is marked.
+    /// </summary>
+    /// <param name="tsv">Result table.</param>
+    /// <returns>Summary text.</returns>
     static string summarize_param_study(string tsv)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -4893,6 +5776,17 @@ public class vis_3D : MonoBehaviour
 
     //23092026 Statistikblock einer Komponente fuer save_accuracy_analysis
     //27092026 unit/dec: Einheit und Nachkommastellen (Fluss in px mit 2-3 Stellen, Dehnung dimensionslos mit mehr)
+    /// <summary>
+    /// Statistics block of one component for the accuracy report.
+    /// </summary>
+    /// <param name="comp">Component name.</param>
+    /// <param name="val">Measured map.</param>
+    /// <param name="gt">Reference map.</param>
+    /// <param name="loss_abs">Absolute error map.</param>
+    /// <param name="loss_rel">Relative error map.</param>
+    /// <param name="unit">Unit shown in the report.</param>
+    /// <param name="dec">Number of decimals.</param>
+    /// <returns>Report text.</returns>
     string accuracy_block(string comp, List<List<float>> val, List<List<float>> gt,
         List<List<float>> loss_abs, List<List<float>> loss_rel, string unit = "px", int dec = 2)
     {
@@ -4973,6 +5867,11 @@ public class vis_3D : MonoBehaviour
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Assigns the display plane to the cameras and refreshes the scene-UI controls.
+    /// </summary>
+    /// <param name="platine_plane">Display plane of the maps.</param>
+    /// <param name="t_idx">Time index.</param>
     public void manage_assign(GameObject platine_plane, int t_idx)
     {
         assign_to_cam(platine_plane);
@@ -4994,6 +5893,12 @@ public class vis_3D : MonoBehaviour
             experiment_control.refresh_info(experiment);
     }
 
+    /// <summary>
+    /// Resolves the flow folder and time index of the current display.
+    /// </summary>
+    /// <param name="path_time_flow_v">Flow folder (null = default).</param>
+    /// <param name="t_idx">Time index (-1 = current).</param>
+    /// <returns>Tuple (flow folder, time index).</returns>
     public (string, int) refresh_params(string path_time_flow_v, int t_idx)
     {
         //13012025 if (path_stereo == null) { path_stereo = this.get_path_stereo(); }
@@ -5019,6 +5924,10 @@ public class vis_3D : MonoBehaviour
         if (get_blade_tris() == null) { set_blade_tris(init_tris_empty()); }
         return (path_time_flow_v, t_idx);
     }
+    /// <summary>
+    /// Loads measured and reference depth maps of the current display (legacy height display).
+    /// </summary>
+    /// <returns>Tuple (depth, reference depth, scale).</returns>
     public (List<List<float>>, List<List<float>>, float) manage_heights()
     {
         // info (paul): heights/ heights_ref/ heights_diff
@@ -5070,6 +5979,10 @@ public class vis_3D : MonoBehaviour
         return (heights, heights_chosen, scale_factor);
     }
 
+    /// <summary>
+    /// Zero depth maps (flat display).
+    /// </summary>
+    /// <returns>Tuple of two zero maps.</returns>
     public (List<List<float>>, List<List<float>>) trivial_heights()
     {
         int render_res = get_render_res();
@@ -5077,6 +5990,10 @@ public class vis_3D : MonoBehaviour
         List<List<float>> mat_1 = zeros_of_size(render_res, render_res);
         return (mat_0, mat_1);
     }
+    /// <summary>
+    /// Reads the TV depth map and its reference of the current experiment (legacy height display).
+    /// </summary>
+    /// <returns>Tuple (depth, reference depth).</returns>
     public (List<List<float>>, List<List<float>>) read_heights_tv()
     {
         List<List<float>> mat_u_pre_pre = load_heights_raw();
@@ -5105,6 +6022,10 @@ public class vis_3D : MonoBehaviour
 
         return (mat_cut, mat);
     }
+    /// <summary>
+    /// Loads the raw stereo map of the current experiment (legacy).
+    /// </summary>
+    /// <returns>Raw map.</returns>
     public List<List<float>> load_heights_raw()
     {
         int t_idx_0 = 2;
@@ -5134,6 +6055,10 @@ public class vis_3D : MonoBehaviour
         List<List<float>> mat_u_pre_pre = floats2_to_lists(mat_u_pre_pre_pre);
         return mat_u_pre_pre;
     }
+    /// <summary>
+    /// Reads the stored value range of the stereo map.
+    /// </summary>
+    /// <returns>Tuple (minimum, maximum).</returns>
     public (float, float) find_min_max_for_heights()
     {
         string min_max_file = path_dic + remove_dots(get_experiment()) +
@@ -5145,6 +6070,12 @@ public class vis_3D : MonoBehaviour
         return (min_val, max_val);
     }
 
+    /// <summary>
+    /// Loads an image file as matrix of gray values.
+    /// </summary>
+    /// <param name="path">Image file.</param>
+    /// <param name="with_switch_dims">True to transpose.</param>
+    /// <returns>Matrix m[i][j].</returns>
     public List<List<float>> load_tex_to_mat(string path, bool with_switch_dims = false)
     {
         // info (paul): load a tex and convvert it into mat
@@ -5165,6 +6096,12 @@ public class vis_3D : MonoBehaviour
         return mat_u;
     }
 
+    /// <summary>
+    /// Displays depth, reference, or depth error on the sample according to the height mode.
+    /// </summary>
+    /// <param name="heights">Measured depth.</param>
+    /// <param name="heights_ref">Reference depth.</param>
+    /// <param name="scale_factor">Display scale.</param>
     public void manage_heights_loss(List<List<float>> heights, List<List<float>> heights_ref, float scale_factor)
     {
         // info (paul): new parts for heightsList<List<float>>
@@ -5184,6 +6121,11 @@ public class vis_3D : MonoBehaviour
                 dev_v, stream_v_min, stream_v_max);
         }
     }
+    /// <summary>
+    /// Clips a depth map below its meaningful minimum (removes background).
+    /// </summary>
+    /// <param name="heights_chosen_input">Depth map.</param>
+    /// <returns>Clipped copy.</returns>
     public List<List<float>> cut_off(List<List<float>> heights_chosen_input)
     {
         List<List<float>> heights_chosen = copy_mat(heights_chosen_input);
@@ -5203,6 +6145,12 @@ public class vis_3D : MonoBehaviour
         return heights_chosen;
     }
 
+    /// <summary>
+    /// Smallest depth value above a floor.
+    /// </summary>
+    /// <param name="heights_chosen">Depth map.</param>
+    /// <param name="floor">Floor value.</param>
+    /// <returns>Minimum above the floor.</returns>
     public float find_min_meaningful(List<List<float>> heights_chosen, float floor)
     {
         float min_val_meaningful = 9999f;
@@ -5221,6 +6169,12 @@ public class vis_3D : MonoBehaviour
         return min_val_meaningful;
     }
 
+    /// <summary>
+    /// Sets depth values below a floor to the floor.
+    /// </summary>
+    /// <param name="heights_chosen">Depth map (modified).</param>
+    /// <param name="floor">Floor value.</param>
+    /// <returns>The modified map.</returns>
     public List<List<float>> cut_off_below_floor(List<List<float>> heights_chosen, float floor)
     {
         // info (paul): cut off below floor
@@ -5257,6 +6211,13 @@ public class vis_3D : MonoBehaviour
         return heights_chosen;
     }
 
+    /// <summary>
+    /// Selects the depth map to display according to the height mode (value, reference, or error).
+    /// </summary>
+    /// <param name="heights">Measured depth.</param>
+    /// <param name="heights_ref">Reference depth.</param>
+    /// <param name="diff_im">Difference map.</param>
+    /// <returns>Tuple (selected map, coverage).</returns>
     public (List<List<float>>, float) choose_heights(List<List<float>> heights, List<List<float>> heights_ref, List<List<float>> diff_im)
     {
         // info (paul): Choose heights based on the mode, what should be plotted as heightmap
@@ -5289,11 +6250,20 @@ public class vis_3D : MonoBehaviour
 
         return (chosen, scale_factor);
     }
+    /// <summary>
+    /// Returns the height display mode.
+    /// </summary>
+    /// <returns>value, value_ref, loss_abs, or loss_rel.</returns>
     public string get_heights_mode()
     {
         return this.heights_mode;
     }
 
+    /// <summary>
+    /// Sets the height display mode and switches the display to depth.
+    /// </summary>
+    /// <param name="input">value, value_ref, loss_abs, or loss_rel.</param>
+    /// <param name="is_internal">True for internal changes without switching the display.</param>
     public void set_heights_mode(string input, bool is_internal = false)
     {
         this.heights_mode = input;
@@ -5304,6 +6274,13 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Difference between measured and reference depth.
+    /// </summary>
+    /// <param name="heights">Measured depth.</param>
+    /// <param name="heights_ref">Reference depth.</param>
+    /// <param name="mode">absolute or relative.</param>
+    /// <returns>Difference map.</returns>
     public List<List<float>> find_diff(List<List<float>> heights, List<List<float>> heights_ref, string mode = "absolute")
     {
         // info (paul): mode: "absolute": the normal difference is used
@@ -5375,6 +6352,9 @@ public class vis_3D : MonoBehaviour
         return diffs;
     }
 
+    /// <summary>
+    /// Removes the display plane of the maps.
+    /// </summary>
     public void clean_platine_plane()
     {
         GameObject plane = GameObject.Find("platine_plane");
@@ -5383,6 +6363,12 @@ public class vis_3D : MonoBehaviour
             remove_obj(plane);
         }
     }
+    /// <summary>
+    /// Adds a constant to all entries of a matrix.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="scale">Constant to add.</param>
+    /// <returns>New matrix.</returns>
     public List<List<float>> add_to_mat(List<List<float>> mat, float scale)
     {
         List<List<float>> new_mat = copy_mat(mat);
@@ -5396,6 +6382,12 @@ public class vis_3D : MonoBehaviour
         }
         return new_mat;
     }
+    /// <summary>
+    /// Multiplies all entries of a matrix by a constant.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="scale">Factor.</param>
+    /// <returns>New matrix.</returns>
     public List<List<float>> multiply_with_scalar(List<List<float>> mat,
         float scale)
     {
@@ -5410,12 +6402,20 @@ public class vis_3D : MonoBehaviour
         }
         return new_mat;
     }
+    /// <summary>
+    /// Destroys a game object.
+    /// </summary>
+    /// <param name="obj">Object to destroy.</param>
     public void remove_obj(GameObject obj)
     {
         // info (paul): destroy platine plane
         Destroy(obj);
     }
 
+    /// <summary>
+    /// Connects the display plane with the interactive cameras (if present).
+    /// </summary>
+    /// <param name="platine_plane">Display plane.</param>
     public void assign_to_cam(GameObject platine_plane)
     {
         //20092026 "exp_cam" traegt in der Szene kein Cam_manager-Skript (nur MainCamera)
@@ -5432,6 +6432,10 @@ public class vis_3D : MonoBehaviour
             cam_exp.platine_plane = platine_plane.transform;
     }
 
+    /// <summary>
+    /// Appends text to the log field of the scene.
+    /// </summary>
+    /// <param name="text">Text to append.</param>
     public void log(string text)
     {
         log_field.GetComponent<TextMeshProUGUI>().text += text;
@@ -5443,6 +6447,9 @@ public class vis_3D : MonoBehaviour
     int speckle_idx = 0;
     private int reg_idx = 0;
 
+    /// <summary>
+    /// Unity callback: executes jobs queued by the flow thread (GPU calls), updates the progress display, and advances the rendering and analysis state machine of the standard analysis and the sweeps.
+    /// </summary>
     void Update()
     {
         //23092026 Auftraege aus dem TV-Hintergrundthread (GPU-Aufrufe) im Hauptthread ausfuehren.
@@ -5524,22 +6531,37 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Returns the index of the current rendering step.
+    /// </summary>
+    /// <returns>Step index.</returns>
     public int get_reg_idx()
     {
         return reg_idx;
     }
 
+    /// <summary>
+    /// Sets the index of the current rendering step.
+    /// </summary>
+    /// <param name="input">Step index.</param>
     public void set_reg_idx(int input)
     {
         reg_idx = input;
     }
 
+    /// <summary>
+    /// Advances the index of the current rendering step.
+    /// </summary>
+    /// <param name="value">Increment.</param>
     public void add_to_reg_idx(int value)
     {
         int reg_idx = get_reg_idx();
         set_reg_idx(reg_idx + value);
     }
 
+    /// <summary>
+    /// Legacy placeholder for updating the sample images.
+    /// </summary>
     public void update_blade_pics_if()
     {
         //23092024 bool blades_created = get_blades_created();
@@ -5549,63 +6571,111 @@ public class vis_3D : MonoBehaviour
         //23092024 }
     }
 
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.035.
+    /// </summary>
     public void start_speckle_0_035()
     {
         start_speckle(diameter: 0.035f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.07.
+    /// </summary>
     public void start_speckle_0_07()
     {
         start_speckle(diameter: 0.07f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.35.
+    /// </summary>
     public void start_speckle_0_35()
     {
         start_speckle(diameter: 0.35f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.175.
+    /// </summary>
     public void start_speckle_0_175()
     {
         start_speckle(diameter: 0.175f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.7.
+    /// </summary>
     public void start_speckle_0_7()
     {
         start_speckle(diameter: 0.7f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 1.4.
+    /// </summary>
     public void start_speckle_1_4()
     {
         start_speckle(diameter: 1.4f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 2.1.
+    /// </summary>
     public void start_speckle_2_1()
     {
         start_speckle(diameter: 2.1f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 2.8.
+    /// </summary>
     public void start_speckle_2_8()
     {
         start_speckle(diameter: 2.8f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 7.0.
+    /// </summary>
     public void start_speckle_7_0()
     {
         start_speckle(diameter: 7.0f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 14.0.
+    /// </summary>
     public void start_speckle_14_0()
     {
         start_speckle(diameter: 14.0f);
     }
 
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 0.5.
+    /// </summary>
     public void start_speckle_05()
     {
         start_speckle(diameter: 0.5f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 1.
+    /// </summary>
     public void start_speckle_1()
     {
         start_speckle(diameter: 1f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 2.
+    /// </summary>
     public void start_speckle_2()
     {
         start_speckle(diameter: 2f);
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment with material size 4.
+    /// </summary>
     public void start_speckle_4()
     {
         start_speckle(diameter: 4f);
     }
+    /// <summary>
+    /// Starts a single speckle experiment: sets the speckle material (and optionally the field of view) and renders and analyses the images.
+    /// </summary>
+    /// <param name="diameter">Material size (-1 = keep).</param>
+    /// <param name="fov">Field of view in degrees (-1 = keep).</param>
+    /// <param name="label">Experiment label (empty = derived from the size).</param>
     public void start_speckle(float diameter = -1f, float fov = -1f, string label = "")
     {
         // info (paul): do a speckle experiment analysis, since lighting is finished;
@@ -5648,6 +6718,11 @@ public class vis_3D : MonoBehaviour
             set_field_of_view(20f);
         }
     }
+    /// <summary>
+    /// Creates the two cameras (and their symbols) from an experiment configuration.
+    /// </summary>
+    /// <param name="config">Experiment configuration.</param>
+    /// <param name="cam_angle">Tilt angle of the cameras in degrees.</param>
     public void set_up_cams(ExpConfig config, float cam_angle = 30f)
     {
         // info (paul): clean up old cams
@@ -5687,6 +6762,9 @@ public class vis_3D : MonoBehaviour
             im_1_panel.GetComponent<UnityEngine.UI.Image>().material = mat1;
         }
     }
+    /// <summary>
+    /// Removes the camera symbols from the scene.
+    /// </summary>
     public void clean_symbols()
     {
         GameObject symbols = GameObject.Find("cams_symbols");
@@ -5695,6 +6773,11 @@ public class vis_3D : MonoBehaviour
 
     //20092026 true, wenn config_now nie ueber "Confirm" befuellt wurde (fov NaN/<=0 oder
     //alle Kamera-Offsets 0). Dann darf set_up_cams(config) nicht verwendet werden.
+    /// <summary>
+    /// Checks whether an experiment configuration was never filled via Confirm (invalid field of view or all camera offsets zero).
+    /// </summary>
+    /// <param name="config">Configuration to check.</param>
+    /// <returns>True if it must not be used to set up the cameras.</returns>
     public bool config_is_unconfirmed(ExpConfig config)
     {
         if (config == null)
@@ -5709,6 +6792,9 @@ public class vis_3D : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Starts an experiment from the current configuration of the experiment-design panel (cameras, lights, sample, speckles).
+    /// </summary>
     public void start_exp_from_config_now()
     {
         ExpConfig config = this.get_config_now();
@@ -5803,215 +6889,373 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.001.
+    /// </summary>
     public void start_lighting_0001()
     {
         start_lighting(intensity: 0.001f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.01.
+    /// </summary>
     public void start_lighting_001()
     {
         start_lighting(intensity: 0.01f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.02.
+    /// </summary>
     public void start_lighting_002()
     {
         start_lighting(intensity: 0.02f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.03.
+    /// </summary>
     public void start_lighting_003()
     {
         start_lighting(intensity: 0.03f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.032.
+    /// </summary>
     public void start_lighting_0032()
     {
         start_lighting(intensity: 0.032f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.034.
+    /// </summary>
     public void start_lighting_0034()
     {
         start_lighting(intensity: 0.034f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.0345.
+    /// </summary>
     public void start_lighting_00345()
     {
         start_lighting(intensity: 0.0345f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.035.
+    /// </summary>
     public void start_lighting_0035()
     {
         start_lighting(intensity: 0.035f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.0355.
+    /// </summary>
     public void start_lighting_00355()
     {
         start_lighting(intensity: 0.0355f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.036.
+    /// </summary>
     public void start_lighting_0036()
     {
         start_lighting(intensity: 0.036f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.038.
+    /// </summary>
     public void start_lighting_0038()
     {
         start_lighting(intensity: 0.038f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.04.
+    /// </summary>
     public void start_lighting_004()
     {
         start_lighting(intensity: 0.04f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.05.
+    /// </summary>
     public void start_lighting_005()
     {
         start_lighting(intensity: 0.05f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.1.
+    /// </summary>
     public void start_lighting_01()
     {
         start_lighting(intensity: 0.1f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.2.
+    /// </summary>
     public void start_lighting_02()
     {
         start_lighting(intensity: 0.2f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.5.
+    /// </summary>
     public void start_lighting_05()
     {
         start_lighting(intensity: 0.5f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.7.
+    /// </summary>
     public void start_lighting_07()
     {
         start_lighting(intensity: 0.7f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 0.8.
+    /// </summary>
     public void start_lighting_08()
     {
         start_lighting(intensity: 0.8f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 1.
+    /// </summary>
     public void start_lighting_1()
     {
         start_lighting(intensity: 1f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 2.
+    /// </summary>
     public void start_lighting_2()
     {
         start_lighting(intensity: 2f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 3.
+    /// </summary>
     public void start_lighting_3()
     {
         start_lighting(intensity: 3f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 4.
+    /// </summary>
     public void start_lighting_4()
     {
         start_lighting(intensity: 4f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 5.
+    /// </summary>
     public void start_lighting_5()
     {
         start_lighting(intensity: 5f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 6.
+    /// </summary>
     public void start_lighting_6()
     {
         start_lighting(intensity: 6f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 10.
+    /// </summary>
     public void start_lighting_10()
     {
         start_lighting(intensity: 10f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 100.
+    /// </summary>
     public void start_lighting_100()
     {
         start_lighting(intensity: 100f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 10000.
+    /// </summary>
     public void start_lighting_10000()
     {
         start_lighting(intensity: 10000f);
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment with factor 1e8.
+    /// </summary>
     public void start_lighting_100000000()
     {
         start_lighting(intensity: 100000000f);
     }
 
+    /// <summary>
+    /// Legacy shortcut: speckle experiment (size 0.035) with the field of view of the height analysis.
+    /// </summary>
     public void start_speckle_0_035_heights()
     {
         start_speckle(diameter: 0.035f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment (size 0.07) with the field of view of the height analysis.
+    /// </summary>
     public void start_speckle_0_07_heights()
     {
         start_speckle(diameter: 0.07f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment (size 0.175) with the field of view of the height analysis.
+    /// </summary>
     public void start_speckle_0_175_heights()
     {
         start_speckle(diameter: 0.175f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment (size 0.35) with the field of view of the height analysis.
+    /// </summary>
     public void start_speckle_0_35_heights()
     {
         start_speckle(diameter: 0.35f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: speckle experiment (size 0.7) with the field of view of the height analysis.
+    /// </summary>
     public void start_speckle_0_7_heights()
     {
         start_speckle(diameter: 0.7f, fov: heights_fov, label: "_heights");
     }
 
 
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.01) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_001_heights()
     {
         start_lighting(intensity: 0.01f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.02) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_002_heights()
     {
         start_lighting(intensity: 0.02f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.03) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_003_heights()
     {
         start_lighting(intensity: 0.03f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.04) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_004_heights()
     {
         start_lighting(intensity: 0.04f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.05) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_005_heights()
     {
         start_lighting(intensity: 0.05f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.1) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_01_heights()
     {
         start_lighting(intensity: 0.1f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.2) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_02_heights()
     {
         start_lighting(intensity: 0.2f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.5) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_05_heights()
     {
         start_lighting(intensity: 0.5f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.7) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_07_heights()
     {
         start_lighting(intensity: 0.7f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 0.8) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_08_heights()
     {
         start_lighting(intensity: 0.8f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 1) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_1_heights()
     {
         start_lighting(intensity: 1f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 2) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_2_heights()
     {
         start_lighting(intensity: 2f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 3) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_3_heights()
     {
         start_lighting(intensity: 3f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 4) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_4_heights()
     {
         start_lighting(intensity: 4f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 5) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_5_heights()
     {
         start_lighting(intensity: 5f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 6) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_6_heights()
     {
         start_lighting(intensity: 6f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 10) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_10_heights()
     {
         start_lighting(intensity: 10f, fov: heights_fov, label: "_heights");
     }
+    /// <summary>
+    /// Legacy shortcut: illumination experiment (factor 100) with the field of view of the height analysis.
+    /// </summary>
     public void start_lighting_100_heights()
     {
         start_lighting(intensity: 100f, fov: heights_fov, label: "_heights");
     }
 
 
+    /// <summary>
+    /// Removes dots from a label (used for folder names).
+    /// </summary>
+    /// <param name="val">Label.</param>
+    /// <returns>Label without dots.</returns>
     public string remove_dots(string val)
     {
         try
@@ -6023,6 +7267,12 @@ public class vis_3D : MonoBehaviour
             return val.Replace(".", "");
         }
     }
+    /// <summary>
+    /// Starts a single illumination experiment: sets the lamp factor (and optionally the field of view) and renders and analyses the images.
+    /// </summary>
+    /// <param name="intensity">Illumination factor I (-1 = keep).</param>
+    /// <param name="fov">Field of view in degrees (-1 = keep).</param>
+    /// <param name="label">Suffix of the experiment label.</param>
     public void start_lighting(float intensity = -1f, float fov = -1f, string label = "")
     {
         // info (paul): do lighting analysis, since "normal" is finished
@@ -6053,6 +7303,9 @@ public class vis_3D : MonoBehaviour
         //return below_max;
     }
 
+    /// <summary>
+    /// Applies the parameters of the current render action (illumination, noise, speckles, field of view) before rendering.
+    /// </summary>
     public void start_exp_params()
     {
         // info (paul): fetch params
@@ -6093,6 +7346,9 @@ public class vis_3D : MonoBehaviour
         start_renders(blade_path: blade_path_first, blade_idx: blade_idxs[0], with_uv_init: true);
     }
 
+    /// <summary>
+    /// Starts the rendering of the standard experiment (all frames).
+    /// </summary>
     public void start_exp_normal()
     {
         done_normal_exps = true;
@@ -6132,16 +7388,28 @@ public class vis_3D : MonoBehaviour
     //22022025    return blade_idx_l;
     //22022025}
     bool below_max = true;
+    /// <summary>
+    /// Marks whether the current step is below the maximum number of steps.
+    /// </summary>
+    /// <param name="input">True if below the maximum.</param>
     public void set_below_max(bool input)
     {
         this.below_max = input;
     }
+    /// <summary>
+    /// Returns whether the current step is below the maximum number of steps.
+    /// </summary>
+    /// <returns>True if below the maximum.</returns>
     public bool get_below_max()
     {
         return below_max;
     }
 
 
+    /// <summary>
+    /// Builds the list of render actions of the standard analysis.
+    /// </summary>
+    /// <returns>List of actions.</returns>
     public List<Actioner> set_up_render_list()
     {
         // info (paul): make the individual render actions as a list
@@ -6151,6 +7419,11 @@ public class vis_3D : MonoBehaviour
 
         return acts;
     }
+    /// <summary>
+    /// Adds the image-rendering steps of all experiments to the action list (if with_exp is set).
+    /// </summary>
+    /// <param name="acts">Action list.</param>
+    /// <returns>Extended action list.</returns>
     public List<Actioner> add_im_steps(List<Actioner> acts)
     {
         if (get_with_exp())
@@ -6183,11 +7456,18 @@ public class vis_3D : MonoBehaviour
         return acts;
     }
 
+    /// <summary>
+    /// Coroutine wrapper that starts the current flow computation.
+    /// </summary>
+    /// <returns>Coroutine enumerator.</returns>
     public IEnumerator cv_routine()
     {
         manage_cv_act();
         yield return null;
     }
+    /// <summary>
+    /// Runs the flow computation of the current action and advances to the next action afterwards.
+    /// </summary>
     public async void manage_cv_act()
     {
         cv_action_running = true;
@@ -6235,6 +7515,11 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Computes the optical flow of one experiment (image pairs of the selected frames) and evaluates it.
+    /// </summary>
+    /// <param name="cv_idx">Index of the flow action.</param>
+    /// <param name="pars">Parameters of the experiment.</param>
     public async Task manage_cv_async(int cv_idx, Params pars)
     {
         // info (paul): set initial experiment
@@ -6299,6 +7584,9 @@ public class vis_3D : MonoBehaviour
         done_ground_truth = true;
     }
 
+    /// <summary>
+    /// Executes the current render action and logs the progress.
+    /// </summary>
     public void exe_render_acts()
     {
         this.render_acts[render_idx].act.Invoke();
@@ -6308,6 +7596,9 @@ public class vis_3D : MonoBehaviour
         Debug.Log(progress_info);
         render_idx += 1;
     }
+    /// <summary>
+    /// Shows the sample of the next time step.
+    /// </summary>
     public void activate_blade_act()
     {
         int blade_idx_l = get_blade_idx();
@@ -6320,6 +7611,9 @@ public class vis_3D : MonoBehaviour
     //    int blade_idx_l = get_blade_idx();
     //    take_ref_pic(blade_idx_l, cam_idx: 0);
     //}
+    /// <summary>
+    /// Legacy placeholder for updating the sample images.
+    /// </summary>
     public void update_blade_pics()
     {
         //23092024 // blades times
@@ -6335,6 +7629,9 @@ public class vis_3D : MonoBehaviour
 
 
     }
+    /// <summary>
+    /// Computes and stores the pixel-to-triangle assignment and the image-plane reference displacement for all time steps (camera 0).
+    /// </summary>
     public void manage_distortion_ground_truth()
     {
         List<GameObject> blades = collect_blades();
@@ -6380,6 +7677,10 @@ public class vis_3D : MonoBehaviour
             save_tris(blade_idx: i);
         }
     }
+    /// <summary>
+    /// Initialises the triangle lists of the sample objects.
+    /// </summary>
+    /// <param name="blades">Sample objects of the time steps.</param>
     public void init_blade_tris(List<GameObject> blades)
     {
         List<int[]> blade_tris = init_tris_empty(blades.Count);//25092024 new List<int[]>();
@@ -6392,14 +7693,26 @@ public class vis_3D : MonoBehaviour
 
         set_blade_tris(blade_tris);
     }
+    /// <summary>
+    /// Stores the sample objects of the time steps.
+    /// </summary>
+    /// <param name="input">Sample objects.</param>
     public void set_blades(List<GameObject> input)
     {
         this.blades = input;
     }
+    /// <summary>
+    /// Returns the sample objects of the time steps.
+    /// </summary>
+    /// <returns>Sample objects.</returns>
     public List<GameObject> get_blades()
     {
         return blades;
     }
+    /// <summary>
+    /// Stores the triangle indices of a time step.
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
     public void save_tris(int blade_idx)
     {
         // info (paul): save triangle idxs
@@ -6412,6 +7725,11 @@ public class vis_3D : MonoBehaviour
         save_ints2_for_blade(tris, cam_idx: 0, blade_idx: blade_idx, label: "_tris", with_uv_mode: false);
         save_floats3_for_blade(barys, cam_idx: 0, blade_idx: blade_idx, label: "_barys", with_uv_mode: false);
     }
+    /// <summary>
+    /// Assigns to every pixel of a camera the hit triangle of the sample and the barycentric coordinates (ray casting).
+    /// </summary>
+    /// <param name="cam">Camera.</param>
+    /// <returns>Tuple (triangle index per pixel [x, y], barycentric coordinates per pixel).</returns>
     public (int[,], float[][][]) im2triangles(Camera cam)
     {
         int width = cam.pixelWidth;
@@ -6433,6 +7751,11 @@ public class vis_3D : MonoBehaviour
 
         return (tris, barys);
     }
+    /// <summary>
+    /// Loads (or computes) the pixel-to-triangle assignment of the standard experiment.
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Tuple (triangle index per pixel, barycentric coordinates).</returns>
     public (int[,], float[][][]) load_tris(int blade_idx)
     {
         string current_exp = get_experiment();
@@ -6446,6 +7769,12 @@ public class vis_3D : MonoBehaviour
         return (tris, barys);
     }
 
+    /// <summary>
+    /// Adds two arrays element-wise (second may be null).
+    /// </summary>
+    /// <param name="floats_a">First array.</param>
+    /// <param name="floats_b">Second array or null.</param>
+    /// <returns>Sum.</returns>
     public float[] add_floats(float[] floats_a, float[] floats_b)
     {
         float[] floats_c = new float[floats_a.Length];
@@ -6463,6 +7792,13 @@ public class vis_3D : MonoBehaviour
 
         return floats_c;
     }
+    /// <summary>
+    /// Accumulates the per-vertex displacement over a range of time steps.
+    /// </summary>
+    /// <param name="t_idx_start">First time step.</param>
+    /// <param name="t_idx_end">Last time step.</param>
+    /// <param name="label">Component label.</param>
+    /// <returns>Accumulated displacement per vertex.</returns>
     public float[] find_dxs_acc(int t_idx_start, int t_idx_end, string label)
     {
         float[] d_xs = null;
@@ -6482,6 +7818,12 @@ public class vis_3D : MonoBehaviour
 
         return d_xs;
     }
+    /// <summary>
+    /// Image-plane reference displacement of all vertices between the first frame and a later frame (projected vertex positions of both meshes).
+    /// </summary>
+    /// <param name="blade_idx">Time-step index of the later frame.</param>
+    /// <param name="from_path">Optional stored file.</param>
+    /// <returns>Tuple (dx, dy, dz) per vertex.</returns>
     public (float[], float[], float[]) load_distortion_ground_truth(int blade_idx, string from_path = null)
     {
         List<GameObject> blades = collect_blades();
@@ -6531,20 +7873,39 @@ public class vis_3D : MonoBehaviour
 
         return (d_xs, d_ys, d_zs);
     }
+    /// <summary>
+    /// Stores the triangle indices of one time step.
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="slice">Triangle indices.</param>
     public void set_blade_tris_at(int blade_idx, int[] slice)
     {
         List<int[]> blade_tris = get_blade_tris();
         blade_tris[blade_idx] = slice;
         set_blade_tris(blade_tris);
     }
+    /// <summary>
+    /// Stores the triangle lists of all time steps.
+    /// </summary>
+    /// <param name="input">Triangle lists.</param>
     public void set_blade_tris(List<int[]> input)
     {
         this.blade_tris = input;
     }
+    /// <summary>
+    /// Returns the triangle lists of all time steps.
+    /// </summary>
+    /// <returns>Triangle lists.</returns>
     public List<int[]> get_blade_tris()
     {
         return this.blade_tris;
     }
+    /// <summary>
+    /// Projects 3D positions into the image of a camera.
+    /// </summary>
+    /// <param name="now">World positions.</param>
+    /// <param name="cam">Camera.</param>
+    /// <returns>Projected positions.</returns>
     public Vector3[] pos2uvs(Vector3[] now, Camera cam)
     {
         // info (paul): map 3d coordinates to 2d position
@@ -6559,6 +7920,12 @@ public class vis_3D : MonoBehaviour
         return now_proj;
     }
 
+    /// <summary>
+    /// Transforms local mesh vertices to world coordinates.
+    /// </summary>
+    /// <param name="local">Local vertices.</param>
+    /// <param name="blade">Object whose transform is applied.</param>
+    /// <returns>World positions.</returns>
     public Vector3[] transform_to_world(Vector3[] local, GameObject blade)
     {
         // info (paul): transform local verts to global, scaled, rotated etc. verts
@@ -6574,6 +7941,13 @@ public class vis_3D : MonoBehaviour
 
         return globals;
     }
+    /// <summary>
+    /// World positions and, optionally, projected image positions of all vertices of a sample object.
+    /// </summary>
+    /// <param name="current_blade">Sample object.</param>
+    /// <param name="cam">Camera.</param>
+    /// <param name="with_proj">True to project.</param>
+    /// <returns>Tuple (world positions, projected positions).</returns>
     public (Vector3[], Vector3[]) proj_blade(GameObject current_blade, Camera cam,
         bool with_proj = true)
     {
@@ -6596,6 +7970,9 @@ public class vis_3D : MonoBehaviour
         return (now_proj, now_proj);
     }
 
+    /// <summary>
+    /// Empty placeholder (unused).
+    /// </summary>
     public void aaaaa()
     {
         ;
@@ -6603,6 +7980,14 @@ public class vis_3D : MonoBehaviour
         ;
     }
 
+    /// <summary>
+    /// Displacement of all vertices between two sample objects, in the image plane of a camera or in 3D.
+    /// </summary>
+    /// <param name="current_blade">Sample of the first frame.</param>
+    /// <param name="next_blade">Sample of the second frame.</param>
+    /// <param name="cam">Camera (default camera 0).</param>
+    /// <param name="with_proj">True for image-plane displacement.</param>
+    /// <returns>Tuple (dx, dy, dz) per vertex.</returns>
     public (float[], float[], float[]) construct_distortions(GameObject current_blade,
         GameObject next_blade, Camera cam = null, bool with_proj = true)
     {
@@ -6636,6 +8021,12 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Component-wise difference of two point lists.
+    /// </summary>
+    /// <param name="now_proj">First positions.</param>
+    /// <param name="next_proj">Second positions.</param>
+    /// <returns>Tuple (dx, dy, dz).</returns>
     public (float[], float[], float[]) vec_diff(Vector3[] now_proj, Vector3[] next_proj)
     {
         float[] d_xs = new float[now_proj.Length];
@@ -6656,6 +8047,13 @@ public class vis_3D : MonoBehaviour
         return (d_xs, d_ys, d_zs);
     }
 
+    /// <summary>
+    /// Reads a numeric matrix from a CSV/text file.
+    /// </summary>
+    /// <param name="filePath">File or folder.</param>
+    /// <param name="t_idx">Time index for the file name (-1 = none).</param>
+    /// <param name="direct_access">True if filePath is the file itself.</param>
+    /// <returns>Matrix.</returns>
     public List<List<float>> read_dists(string filePath, int t_idx = -1, bool direct_access = false)
     {
         // info (paul): read out file into strings at path
@@ -6676,6 +8074,13 @@ public class vis_3D : MonoBehaviour
         return mat;
     }
 
+    /// <summary>
+    /// Reads the lines of a data file split into fields.
+    /// </summary>
+    /// <param name="filePath">File or folder.</param>
+    /// <param name="t_idxl">Time index for the file name.</param>
+    /// <param name="direct_access">True if filePath is the file itself.</param>
+    /// <returns>List of field arrays.</returns>
     public List<string[]> read_lines_from(string filePath, int t_idxl, bool direct_access = false)
     {
         // info (paul): open the file and read the lines into strings
@@ -6712,6 +8117,11 @@ public class vis_3D : MonoBehaviour
         return lines;
     }
 
+    /// <summary>
+    /// Legacy conversion of a disparity matrix to distances with the old angle formula (does not match the current camera setup).
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <returns>Distance matrix.</returns>
     public List<List<float>> mat_raw2dists(List<List<float>> mat)
     {
         // info (paul): converted the float value matrix from the file, 
@@ -6725,6 +8135,11 @@ public class vis_3D : MonoBehaviour
         return mat;
     }
 
+    /// <summary>
+    /// Converts text fields to a float matrix.
+    /// </summary>
+    /// <param name="lines">Lines split into fields.</param>
+    /// <returns>Matrix.</returns>
     public List<List<float>> strs2mat(List<string[]> lines)
     {
         // info (paul): convert lines of strings to matrix of floats
@@ -6750,6 +8165,11 @@ public class vis_3D : MonoBehaviour
         return mat;
     }
 
+    /// <summary>
+    /// Replaces zero entries by the minimum of the matrix (background below the analysed area).
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>Tuple (modified matrix, minimum).</returns>
     public (List<List<float>>, float) set_zeros_to_min(List<List<float>> mat)
     {
         // info (paul): set the zero values to the min value of mat,
@@ -6777,6 +8197,11 @@ public class vis_3D : MonoBehaviour
         return (mat, min_val);
     }
 
+    /// <summary>
+    /// Debugging helper: overwrites a matrix with a synthetic profile.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>Modified matrix.</returns>
     public List<List<float>> overwrite(List<List<float>> mat)
     {
         // info (paul): overwrite values for debugging reasons
@@ -6796,6 +8221,12 @@ public class vis_3D : MonoBehaviour
 
         return mat;
     }
+    /// <summary>
+    /// Legacy conversion of disparities to distances.
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <param name="min_val">Minimum disparity.</param>
+    /// <returns>Distance matrix.</returns>
     public List<List<float>> disp2dist(List<List<float>> mat, float min_val)
     {
         //List<List<float>> dists = copy_mat(mat);
@@ -6819,6 +8250,11 @@ public class vis_3D : MonoBehaviour
         return dists_3D;//17122024 dists;
     }
 
+    /// <summary>
+    /// Legacy conversion of distances to a 3D height map.
+    /// </summary>
+    /// <param name="dists">Distance matrix.</param>
+    /// <returns>Height map.</returns>
     List<List<float>> to_3d(List<List<float>> dists)
     {
         List<List<float>> dists_3D = copy_mat(dists);
@@ -6843,6 +8279,12 @@ public class vis_3D : MonoBehaviour
         return dists_3D;
     }
 
+    /// <summary>
+    /// Older legacy conversion of disparities to distances.
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <param name="min_val">Minimum disparity.</param>
+    /// <returns>Distance matrix.</returns>
     public List<List<float>> disp2dist_old(List<List<float>> mat, float min_val)
     {
         //mat = overwrite(mat);
@@ -6871,6 +8313,11 @@ public class vis_3D : MonoBehaviour
         return dists;
     }
 
+    /// <summary>
+    /// List of zeros with the length of the input.
+    /// </summary>
+    /// <param name="input">Reference list.</param>
+    /// <returns>Zero list.</returns>
     public List<float> zeros_like(List<float> input)
     {
         List<float> vals = new List<float>();
@@ -6881,6 +8328,11 @@ public class vis_3D : MonoBehaviour
         return vals;
     }
 
+    /// <summary>
+    /// Matrix of (0, 0) tuples with the shape of the input.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<(int, int)>> zeros_like(List<List<(int, int)>> mat)
     {
         List<List<(int, int)>> empty = new List<List<(int, int)>>();
@@ -6896,6 +8348,12 @@ public class vis_3D : MonoBehaviour
         return empty;
     }
 
+    /// <summary>
+    /// Float matrix of zeros with the shape of an integer-tuple matrix.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <param name="return_type">Result type (floats).</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_like(List<List<(int, int)>> mat, string return_type = "floats")
     {
         List<List<float>> empty = new List<List<float>>();
@@ -6910,6 +8368,12 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// Float matrix of zeros with the shape of a float-tuple matrix.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <param name="return_type">Result type (floats).</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_like(List<List<(float, float)>> mat, string return_type = "floats")
     {
         List<List<float>> empty = new List<List<float>>();
@@ -6924,6 +8388,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// Float matrix of zeros with the shape of an integer matrix.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_like(List<List<int>> mat)
     {
         List<List<float>> empty = new List<List<float>>();
@@ -6938,6 +8407,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// Float matrix of zeros with the shape of the input.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_like(List<List<float>> mat)
     {
         List<List<float>> empty = new List<List<float>>();
@@ -6952,6 +8426,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// Float matrix of zeros with the shape of a 2D integer array.
+    /// </summary>
+    /// <param name="mat">Reference array.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_like(int[,] mat)
     {
         List<List<float>> empty = new List<List<float>>();
@@ -6994,6 +8473,11 @@ public class vis_3D : MonoBehaviour
     //    }
     //    return empty;
     //}
+    /// <summary>
+    /// List of zeros.
+    /// </summary>
+    /// <param name="num">Length.</param>
+    /// <returns>Zero list.</returns>
     public List<float> zeros_of_size(int num)
     {
         List<float> empty = new List<float>();
@@ -7004,6 +8488,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// List of double zeros.
+    /// </summary>
+    /// <param name="num">Length.</param>
+    /// <returns>Zero list.</returns>
     public List<double> doubles_of_size(int num)
     {
         List<double> empty = new List<double>();
@@ -7014,6 +8503,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// List of integer zeros.
+    /// </summary>
+    /// <param name="num">Length.</param>
+    /// <returns>Zero list.</returns>
     public List<int> ints_of_size(int num)
     {
         List<int> empty = new List<int>();
@@ -7024,6 +8518,11 @@ public class vis_3D : MonoBehaviour
         }
         return empty;
     }
+    /// <summary>
+    /// Matrix of (0, 0) tuples with the shape of the input.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<(float, float)>> zero_tuples_like(List<List<float>> mat)
     {
         List<List<(float, float)>> empty = new List<List<(float, float)>>();
@@ -7039,6 +8538,11 @@ public class vis_3D : MonoBehaviour
         return empty;
     }
 
+    /// <summary>
+    /// Legacy conversion of one disparity to a distance (fixed camera angles).
+    /// </summary>
+    /// <param name="d_x">Disparity.</param>
+    /// <returns>Distance.</returns>
     public float disp2dist_ij(float d_x)
     {
         // info (paul): disp is d_x
@@ -7074,6 +8578,14 @@ public class vis_3D : MonoBehaviour
         return D_val;
     }
 
+    /// <summary>
+    /// Legacy: viewing angles of a point in both cameras from its pixel positions.
+    /// </summary>
+    /// <param name="x_l">Position in the left image.</param>
+    /// <param name="x_r">Position in the right image.</param>
+    /// <param name="span">Image width.</param>
+    /// <param name="gamma_span">Half field of view.</param>
+    /// <returns>Tuple of both angles.</returns>
     public (float, float) pix2xi(float x_l, float x_r, float span, float gamma_span)
     {
         float x_l_centric = (x_l - 0.5f * span) / (0.5f * span);
@@ -7085,6 +8597,13 @@ public class vis_3D : MonoBehaviour
         float xi_p_val = Mathf.Atan(xi_p_val_tan);
         return (xi_val, xi_p_val);
     }
+    /// <summary>
+    /// Legacy distance from pixel positions in both cameras (angle formula).
+    /// </summary>
+    /// <param name="x_l">Position in the left image.</param>
+    /// <param name="x_r">Position in the right image.</param>
+    /// <param name="span">Image width.</param>
+    /// <returns>Distance.</returns>
     public float disp2dist_new(float x_l, float x_r, float span)
     {
         // info (paul): - xi is the angle from the one camera (further behind and on the right
@@ -7108,6 +8627,13 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Legacy: disparity and pixel positions of one matrix element.
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <param name="width_idx">Column.</param>
+    /// <param name="height_idx">Row.</param>
+    /// <returns>Tuple (disparity, left position, right position, width).</returns>
     public (float, float, float, float) el2vals(List<List<float>> mat, int width_idx, int height_idx)
     {
         float disp_ij = mat[width_idx][height_idx];
@@ -7119,6 +8645,14 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Legacy: viewing angles of one element for the Nakajima camera setup.
+    /// </summary>
+    /// <param name="disp_ij">Disparity.</param>
+    /// <param name="x_l">Left position.</param>
+    /// <param name="x_r">Right position.</param>
+    /// <param name="span">Image width.</param>
+    /// <returns>Tuple of both angles.</returns>
     public (float, float) act_5_ij(float disp_ij, float x_l, float x_r, float span)
     {
         // info (paul): nakajima-close parameters
@@ -7135,6 +8669,11 @@ public class vis_3D : MonoBehaviour
 
     int width_idx_0 = 256;
     int height_idx_0 = 256;
+    /// <summary>
+    /// Legacy: viewing angles of all elements of a disparity matrix.
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <returns>Tuple of angle matrices.</returns>
     public (List<List<float>>, List<List<float>>) act_5(List<List<float>> mat)
     {
         List<List<float>> xi_val_mat = copy_mat(mat);
@@ -7156,6 +8695,12 @@ public class vis_3D : MonoBehaviour
         return (xi_val_mat, xi_p_val_mat);
     }
 
+    /// <summary>
+    /// Legacy: distances from the viewing angles of both cameras.
+    /// </summary>
+    /// <param name="xi_val_mat">Angles of camera 0.</param>
+    /// <param name="xi_p_val_mat">Angles of camera 1.</param>
+    /// <returns>Distance matrix.</returns>
     public List<List<float>> act_6(
         List<List<float>> xi_val_mat, List<List<float>> xi_p_val_mat)
     {
@@ -7200,6 +8745,12 @@ public class vis_3D : MonoBehaviour
         return (dist_mat);
     }
 
+    /// <summary>
+    /// Legacy: applies a per-element conversion function to a disparity matrix.
+    /// </summary>
+    /// <param name="mat">Disparity matrix.</param>
+    /// <param name="act">Conversion function.</param>
+    /// <returns>Converted matrix.</returns>
     public List<List<float>> disp2dist_ij_new(List<List<float>> mat, Func<float, float, float, float, float> act)
     {
         for (int width_idx = 0; width_idx < mat.Count; width_idx++)
@@ -7232,6 +8783,15 @@ public class vis_3D : MonoBehaviour
         //A return dist_val;//d_val;
     }
 
+    /// <summary>
+    /// Legacy: distance of a point from the camera geometry (triangle relations).
+    /// </summary>
+    /// <param name="g_val">Horizontal camera offset.</param>
+    /// <param name="h_val">Vertical camera offset.</param>
+    /// <param name="alpha">Angle between the cameras.</param>
+    /// <param name="xi_val">Angle in camera 0.</param>
+    /// <param name="xi_p_val">Angle in camera 1.</param>
+    /// <returns>Distance.</returns>
     public float find_dist_val(float g_val, float h_val, float alpha, float xi_val, float xi_p_val)
     {
         float c_val = Mathf.Sqrt(g_val * g_val + h_val * h_val);
@@ -7250,6 +8810,11 @@ public class vis_3D : MonoBehaviour
         return dist_val;
     }
 
+    /// <summary>
+    /// Transposes a matrix.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>Transposed matrix.</returns>
     public List<List<float>> transpose_mat(List<List<float>> mat)
     {
         //log("\n 1CA");
@@ -7294,6 +8859,12 @@ public class vis_3D : MonoBehaviour
         return mat_t;
     }
 
+    /// <summary>
+    /// Mirrors a matrix along one index.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="idx">i or j.</param>
+    /// <returns>Mirrored matrix.</returns>
     public List<List<float>> mirror_mat(List<List<float>> mat, string idx = "i")
     {
         List<List<float>> mat_t = new List<List<float>>();
@@ -7325,6 +8896,11 @@ public class vis_3D : MonoBehaviour
         return mat_t;
     }
 
+    /// <summary>
+    /// Negates all entries of a matrix in place.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>The negated matrix.</returns>
     public List<List<float>> invert_sign_of_mat(List<List<float>> mat)
     {
         for (int i_idx = 0; i_idx < mat.Count; i_idx++)
@@ -7336,6 +8912,12 @@ public class vis_3D : MonoBehaviour
         }
         return mat;
     }
+    /// <summary>
+    /// Replaces the outer frame of a matrix by values of the neighbouring interior (removes border artefacts).
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="padding">Width of the frame in pixels.</param>
+    /// <returns>Smoothed matrix.</returns>
     public List<List<float>> smoothen_frame(List<List<float>> mat, int padding = 10)
     {
         List<List<float>> mat_new = copy_mat(mat);
@@ -7360,6 +8942,16 @@ public class vis_3D : MonoBehaviour
 
         return mat_new;
     }
+    /// <summary>
+    /// Creates the display surface of a map (flat plane or relief from a height map) with the map as texture.
+    /// </summary>
+    /// <param name="heights">Height map.</param>
+    /// <param name="points">Grid points of the surface.</param>
+    /// <param name="flow_tex">Texture of the map.</param>
+    /// <param name="force_flat">True for a flat plane.</param>
+    /// <param name="scale_factor">Height scale (-1 = automatic).</param>
+    /// <param name="with_save">True to save the texture.</param>
+    /// <returns>Tuple (surface object, grid points).</returns>
     public (GameObject, List<List<(float, float)>>) make_platine_plane(
         List<List<float>> heights, List<List<(float, float)>> points, Texture2D flow_tex,
         bool force_flat = false, float scale_factor = -1f, bool with_save = false)
@@ -7377,6 +8969,14 @@ public class vis_3D : MonoBehaviour
 
 
 
+    /// <summary>
+    /// Creates the display object from a mesh and a map texture.
+    /// </summary>
+    /// <param name="mesh">Surface mesh.</param>
+    /// <param name="points">Grid points.</param>
+    /// <param name="flow_tex">Texture of the map.</param>
+    /// <param name="with_save">True to save the texture.</param>
+    /// <returns>Tuple (object, grid points, width, height).</returns>
     public (GameObject, List<List<(float, float)>>, int, int) make_plane_with_mesh(Mesh mesh,
         List<List<(float, float)>> points, Texture2D flow_tex,
         bool with_save = false)
@@ -7416,6 +9016,12 @@ public class vis_3D : MonoBehaviour
         return (surface_obj, points, res_x, res_y);
     }
     //
+    /// <summary>
+    /// Creates a game object with mesh filter, renderer, and collider for a mesh.
+    /// </summary>
+    /// <param name="mesh">Mesh.</param>
+    /// <param name="obj_name">Object name.</param>
+    /// <returns>The object.</returns>
     public GameObject setup_surface_obj(Mesh mesh, string obj_name = "platine_plane")
     {
         // info (paul): setup the object, to which the mesh
@@ -7438,6 +9044,12 @@ public class vis_3D : MonoBehaviour
         return surface_obj;
     }
 
+    /// <summary>
+    /// Creates a synthetic test matrix.
+    /// </summary>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <returns>Test matrix.</returns>
     public List<List<float>> init_test_mat(int len_x, int len_y)
     {
         List<List<float>> mat_test = zeros_of_size(len_x, len_y);
@@ -7456,15 +9068,28 @@ public class vis_3D : MonoBehaviour
 
     string speckle_file;//21102024 "speckle_5.000";//25092024 "speckle_5";//11072024 "speckle_pattern";
     Texture2D experimentalStatisticsSpeckleTexture;
+    /// <summary>
+    /// Sets the speckle material of the sample.
+    /// </summary>
+    /// <param name="input">Material name (e.g. speckle_0.070).</param>
     public void set_speckle_file(string input)
     {
         this.speckle_file = input;
     }
+    /// <summary>
+    /// Returns the speckle material of the sample.
+    /// </summary>
+    /// <returns>Material name.</returns>
     public string get_speckle_file()
     {
         return this.speckle_file;
     }
 
+    /// <summary>
+    /// Applies the speckle pattern to a sample: material series, procedural texture (p&lt;s&gt;), or the experiment-derived texture of the Nakajima look.
+    /// </summary>
+    /// <param name="obj">Sample object.</param>
+    /// <param name="file_name">Name of the pattern (legacy).</param>
     public void apply_speckles(GameObject obj, string file_name = "speckle_pattern")
     {
         //23092024 string mat_file = "Targets/fbx_files/Materials/" + remove_dots(get_speckle_file());
@@ -7526,8 +9151,20 @@ public class vis_3D : MonoBehaviour
     static readonly string[] speckle_texture_labels = { "gemessen (gespiegelt)", "zufaellig", "zufaellig kontrastreich" };
     private int speckle_texture_mode = 0;
     private int loaded_speckle_texture_mode = -1;
+    /// <summary>
+    /// Returns the selected speckle texture of the Nakajima look.
+    /// </summary>
+    /// <returns>Index of the texture.</returns>
     public int get_speckle_texture_mode() { return speckle_texture_mode; }
+    /// <summary>
+    /// Name of the selected speckle texture.
+    /// </summary>
+    /// <returns>Description text.</returns>
     public string describe_speckle_texture() { return speckle_texture_labels[speckle_texture_mode]; }
+    /// <summary>
+    /// Selects and stores the speckle texture of the Nakajima look (cyclic).
+    /// </summary>
+    /// <param name="mode">Index of the texture.</param>
     public void set_speckle_texture_mode(int mode)
     {
         speckle_texture_mode = ((mode % speckle_texture_files.Length) + speckle_texture_files.Length) % speckle_texture_files.Length;
@@ -7540,15 +9177,30 @@ public class vis_3D : MonoBehaviour
     //  trilinearer/anisotroper Filterung, damit sehr feine Muster im Bild korrekt zu Grau mitteln
     float procedural_speckle_s = float.NaN;
     readonly Dictionary<string, Texture2D> procedural_speckle_cache = new Dictionary<string, Texture2D>();
+    /// <summary>
+    /// Label of a procedural speckle diameter (dot replaced by p).
+    /// </summary>
+    /// <param name="s">Diameter in texture pixels.</param>
+    /// <returns>Label text.</returns>
     public static string procedural_speckle_label(float s)
     {
         return s.ToString("G6", CultureInfo.InvariantCulture).Replace('.', 'p');
     }
+    /// <summary>
+    /// Path of the procedural speckle texture of a diameter (Assets/cam00/procedural).
+    /// </summary>
+    /// <param name="s">Diameter in texture pixels.</param>
+    /// <returns>File path.</returns>
     public static string procedural_speckle_path(float s)
     {
         return Path.Combine(UnityEngine.Application.dataPath, "cam00", "procedural",
             "proc_speckle_s" + procedural_speckle_label(s) + ".png");
     }
+    /// <summary>
+    /// Loads a procedural speckle texture (cached).
+    /// </summary>
+    /// <param name="s">Diameter in texture pixels.</param>
+    /// <returns>Texture, or null if the file is missing.</returns>
     private Texture2D load_procedural_speckle(float s)
     {
         string path = procedural_speckle_path(s);
@@ -7575,6 +9227,10 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Loads the selected experiment-derived speckle texture (cached until the selection changes).
+    /// </summary>
+    /// <returns>Texture.</returns>
     private Texture2D load_experimental_statistics_speckle()
     {
         if (experimentalStatisticsSpeckleTexture != null && loaded_speckle_texture_mode == speckle_texture_mode)
@@ -7606,6 +9262,10 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Reference depth maps of the current frame (legacy height display).
+    /// </summary>
+    /// <returns>Tuple of reference maps.</returns>
     public (List<List<float>>, List<List<float>>) load_heights_ref()
     {
         List<List<float>> mat_u;
@@ -7632,6 +9292,13 @@ public class vis_3D : MonoBehaviour
         return (mat_cut, mat_u);
     }
 
+    /// <summary>
+    /// Creates the material of the display surface from the map texture.
+    /// </summary>
+    /// <param name="points">Grid points.</param>
+    /// <param name="flow_tex">Texture of the map.</param>
+    /// <param name="with_save">True to save the texture.</param>
+    /// <returns>Tuple (material, grid points, width, height).</returns>
     public (Material, List<List<(float, float)>>, int, int) manage_material(
         List<List<(float, float)>> points, Texture2D flow_tex, bool with_save = false)
     {
@@ -7647,6 +9314,14 @@ public class vis_3D : MonoBehaviour
 
         return (flow_mat, points, res_x, res_y);
     }
+    /// <summary>
+    /// Loads the flow maps of the current experiment and builds the displayed texture (value, reference, or error of the chosen component, strain).
+    /// </summary>
+    /// <param name="dir_time_flow_u">Folder of the u maps.</param>
+    /// <param name="dir_time_flow_v">Folder of the v maps.</param>
+    /// <param name="heights">Height map.</param>
+    /// <param name="heights_chosen">Displayed height map.</param>
+    /// <returns>Tuple (texture, displayed map).</returns>
     public (Texture2D, List<List<float>>) manage_flow(string dir_time_flow_u, string dir_time_flow_v,
         List<List<float>> heights, List<List<float>> heights_chosen)
     {
@@ -7716,6 +9391,10 @@ public class vis_3D : MonoBehaviour
         return (flow_tex, flow_mat_logged);
     }
 
+    /// <summary>
+    /// Collects strain values for the export of the MUC evaluation.
+    /// </summary>
+    /// <param name="strains_comp">Strain map.</param>
     public void note_strains(List<List<float>> strains_comp)
     {
         // info (paul): function is part of the framework for gom/muc strain saving
@@ -7749,6 +9428,11 @@ public class vis_3D : MonoBehaviour
         //}
     }
 
+    /// <summary>
+    /// Sets positive entries of a list to zero.
+    /// </summary>
+    /// <param name="mat">List of values.</param>
+    /// <returns>Modified copy.</returns>
     public List<float> cut_positives(List<float> mat)
     {
         List<float> mat_new = zeros_like(mat);
@@ -7768,6 +9452,13 @@ public class vis_3D : MonoBehaviour
         return mat_new;
     }
 
+    /// <summary>
+    /// Checks whether a pixel lies inside the image without a border.
+    /// </summary>
+    /// <param name="idx_x">Column.</param>
+    /// <param name="idx_y">Row.</param>
+    /// <param name="padding">Border width.</param>
+    /// <returns>True if inside.</returns>
     public bool in_boundaries(int idx_x, int idx_y, int padding = 10)
     {
         bool cond_1 = idx_x > padding;
@@ -7780,6 +9471,12 @@ public class vis_3D : MonoBehaviour
         return is_in;
     }
 
+    /// <summary>
+    /// Writes minor and major strain in a text format for comparison with GOM.
+    /// </summary>
+    /// <param name="minor">Minor strain.</param>
+    /// <param name="major">Major strain.</param>
+    /// <param name="title">Output file name.</param>
     public void write_gom(List<float> minor, List<float> major, string title = "gom.txt")
     {
         string path = root_path + title;
@@ -7838,6 +9535,12 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Element-wise sum of two matrices.
+    /// </summary>
+    /// <param name="mat_0">First matrix.</param>
+    /// <param name="mat_1">Second matrix.</param>
+    /// <returns>Sum.</returns>
     public List<List<float>> mat_sum(List<List<float>> mat_0, List<List<float>> mat_1)
     {
         List<List<float>> sum = zeros_like(mat_0);
@@ -7852,6 +9555,12 @@ public class vis_3D : MonoBehaviour
 
         return sum;
     }
+    /// <summary>
+    /// Element-wise difference of two matrices.
+    /// </summary>
+    /// <param name="mat_0">First matrix.</param>
+    /// <param name="mat_1">Second matrix.</param>
+    /// <returns>Difference mat_0 - mat_1.</returns>
     public List<List<float>> mat_diff(List<List<float>> mat_0, List<List<float>> mat_1)
     {
         List<List<float>> sum = zeros_like(mat_0);
@@ -7866,6 +9575,11 @@ public class vis_3D : MonoBehaviour
 
         return sum;
     }
+    /// <summary>
+    /// Natural logarithm of all entries.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>Logarithmic matrix.</returns>
     public List<List<float>> log_mat(List<List<float>> mat)
     {
         List<List<float>> logged = copy_mat(mat);
@@ -7880,6 +9594,12 @@ public class vis_3D : MonoBehaviour
 
         return logged;
     }
+    /// <summary>
+    /// Shifts all values so that the minimum becomes zero (plus offset).
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="offset">Additional offset.</param>
+    /// <returns>Shifted matrix.</returns>
     public List<List<float>> shift_above_zero(List<List<float>> mat, float offset = 0f)
     {
         // info (paul): this function will shift all values, so that the 
@@ -7897,6 +9617,11 @@ public class vis_3D : MonoBehaviour
 
         return mat;
     }
+    /// <summary>
+    /// Creates a material that shows a map texture.
+    /// </summary>
+    /// <param name="flow_tex">Texture of the map.</param>
+    /// <returns>Material.</returns>
     public Material flow_tex2mat(Texture2D flow_tex)
     {
         string flow_mat_name = "Targets/mat_1";
@@ -7918,6 +9643,12 @@ public class vis_3D : MonoBehaviour
     }
 
     // info (paul): image noise:
+    /// <summary>
+    /// Applies the image noise of an experiment (Gaussian and/or Poisson shot noise) to a rendered image.
+    /// </summary>
+    /// <param name="image">Gray values.</param>
+    /// <param name="pars">Parameters of the experiment.</param>
+    /// <returns>Noisy image.</returns>
     public List<List<float>> manage_image_noise(List<List<float>> image, Params pars)
     {
         //if (exp_cv_acts[get_reg_idx() - 1].get_label().EndsWith("gauss_3"))
@@ -7935,6 +9666,12 @@ public class vis_3D : MonoBehaviour
         return image_2;
     }
 
+    /// <summary>
+    /// Adds Gaussian noise to an image.
+    /// </summary>
+    /// <param name="image">Gray values.</param>
+    /// <param name="gaussian_error">Standard deviation.</param>
+    /// <returns>Noisy image.</returns>
     public List<List<float>> manage_gauss_noise(List<List<float>> image, float gaussian_error = 1f)
     {
         if (gaussian_error > 2f)
@@ -7965,6 +9702,13 @@ public class vis_3D : MonoBehaviour
     // Photon shot noise: K ~ Poisson(N_peak * I), I_noisy = K / N_peak.
     // N_peak is the full-scale electron capacity. Thus the full-scale relative
     // standard deviation is 1/sqrt(N_peak). A value <= 0 disables shot noise.
+    /// <summary>
+    /// Photon shot noise: K ~ Poisson(N_peak * I), I_noisy = K / N_peak (reproducible per sample index).
+    /// </summary>
+    /// <param name="image">Gray values in 0..1.</param>
+    /// <param name="peakElectrons">Full-scale electron capacity N_peak (0 or less = off).</param>
+    /// <param name="sampleIndex">Index for the random seed.</param>
+    /// <returns>Noisy image.</returns>
     public List<List<float>> manage_poisson_noise(List<List<float>> image,
         float peakElectrons, int sampleIndex)
     {
@@ -7994,6 +9738,12 @@ public class vis_3D : MonoBehaviour
         return image_1;
     }
 
+    /// <summary>
+    /// Draws a Poisson-distributed number (inversion for small mean, normal approximation for large mean).
+    /// </summary>
+    /// <param name="random">Random generator.</param>
+    /// <param name="lambda">Mean.</param>
+    /// <returns>Sample.</returns>
     private static int sample_poisson(System.Random random, double lambda)
     {
         if (lambda <= 0d) return 0;
@@ -8014,6 +9764,11 @@ public class vis_3D : MonoBehaviour
         return Math.Max(0, (int)Math.Round(lambda + Math.Sqrt(lambda) * normal));
     }
 
+    /// <summary>
+    /// Saves the displayed map as image (with a label of the display mode).
+    /// </summary>
+    /// <param name="flow_tex">Displayed texture.</param>
+    /// <param name="with_save">True to save.</param>
     public void save_current_flow(Texture2D flow_tex, bool with_save)
     {
         if (with_save)
@@ -8035,6 +9790,10 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Name of the active display mode (flow, heights, ...).
+    /// </summary>
+    /// <returns>Mode name.</returns>
     public string find_active_mode()
     {
         string active_mode = null;
@@ -8051,6 +9810,12 @@ public class vis_3D : MonoBehaviour
         return active_mode;
     }
 
+    /// <summary>
+    /// Multiplies a square matrix by a factor in place.
+    /// </summary>
+    /// <param name="input">Matrix.</param>
+    /// <param name="factor">Factor.</param>
+    /// <returns>The matrix.</returns>
     public List<List<float>> multiply(List<List<float>> input, float factor)
     {
         for (int i = 0; i < input.Count; i++)
@@ -8063,6 +9828,12 @@ public class vis_3D : MonoBehaviour
         return input;
     }
 
+    /// <summary>
+    /// Multiplies a list by a factor in place.
+    /// </summary>
+    /// <param name="input">List.</param>
+    /// <param name="factor">Factor.</param>
+    /// <returns>The list.</returns>
     public List<float> multiply(List<float> input, float factor)
     {
         for (int i = 0; i < input.Count; i++)
@@ -8071,6 +9842,13 @@ public class vis_3D : MonoBehaviour
         }
         return input;
     }
+    /// <summary>
+    /// Computes the displayed strain map from the flow according to the strain mode (derivative, strain rate, minor/major strain).
+    /// </summary>
+    /// <param name="flow_tex">Displacement map.</param>
+    /// <param name="heights_chosen">Height map.</param>
+    /// <param name="stream_z">Out-of-plane component (if available).</param>
+    /// <returns>Strain map.</returns>
     public List<List<float>> manage_strain(List<List<float>> flow_tex,
         List<List<float>> heights_chosen, List<List<float>> stream_z)
     {
@@ -8130,6 +9908,11 @@ public class vis_3D : MonoBehaviour
         return strain;
     }
 
+    /// <summary>
+    /// Writes the value range of the strain map (and its reference) to the scale label.
+    /// </summary>
+    /// <param name="heights_chosen">Height map.</param>
+    /// <returns>The strain map.</returns>
     public List<List<float>> update_label_for_strain(List<List<float>> heights_chosen)
     {
         //List<List<float>> strains = tex2mat(strain, with_switch_dims: false);
@@ -8166,6 +9949,11 @@ public class vis_3D : MonoBehaviour
         }
         return strain_map_abs;
     }
+    /// <summary>
+    /// Absolute value of all entries.
+    /// </summary>
+    /// <param name="strain">Matrix.</param>
+    /// <returns>Matrix of absolute values.</returns>
     public List<List<float>> mat_abs(List<List<float>> strain)
     {
         List<List<float>> strain_abs = copy_mat(strain);
@@ -8180,6 +9968,11 @@ public class vis_3D : MonoBehaviour
 
         return strain_abs;
     }
+    /// <summary>
+    /// Debugging helper: overwrites a texture with a synthetic pattern.
+    /// </summary>
+    /// <param name="tex">Texture.</param>
+    /// <returns>Modified texture.</returns>
     public Texture2D overwrite_tex(Texture2D tex)
     {
         Color[] cols = new Color[tex.width * tex.height];
@@ -8198,6 +9991,17 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Loads the flow maps of a folder or file pair and builds the accumulated displacement relative to the first frame.
+    /// </summary>
+    /// <param name="path_time_flow_u">Folder or file of the u maps.</param>
+    /// <param name="path_time_flow_v">Folder or file of the v maps.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <param name="im_cnt">Number of images (-1 = all).</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <param name="from_path">True to load stored data.</param>
+    /// <returns>Tuple (chosen map, width, height, out-of-plane component).</returns>
     public (List<List<float>>, int, int, List<List<float>>) load_and_construct_flow(
         string path_time_flow_u, string path_time_flow_v,
         int res_x, int res_y, int im_cnt = -1, int t_idx = -1, bool from_path = false)
@@ -8224,6 +10028,12 @@ public class vis_3D : MonoBehaviour
         return (flow_mat, res_x, res_y, stream_z);
     }
 
+    /// <summary>
+    /// Assigns the flow image files (names like time_flow_u_&lt;t&gt;.png) to their time indices.
+    /// </summary>
+    /// <param name="dir_info_u">Files of the u folder.</param>
+    /// <param name="dir_info_v">Files of the v folder.</param>
+    /// <returns>Dictionary component -&gt; (time index -&gt; file).</returns>
     public Dictionary<string, Dictionary<int, FileInfo>> select_flow_files(FileInfo[] dir_info_u,
         FileInfo[] dir_info_v)
     {
@@ -8284,6 +10094,11 @@ public class vis_3D : MonoBehaviour
         return flow_dic;
     }
 
+    /// <summary>
+    /// Splits a point matrix into x and y components.
+    /// </summary>
+    /// <param name="points">Matrix of (x, y) tuples.</param>
+    /// <returns>Tuple (x map, y map).</returns>
     public (List<List<float>>, List<List<float>>) points2flow(List<List<(float, float)>> points)
     {
         List<List<float>> flow_x = new List<List<float>>();
@@ -8304,6 +10119,11 @@ public class vis_3D : MonoBehaviour
         return (flow_x, flow_y);
     }
 
+    /// <summary>
+    /// Subtracts the mean of both components from a point matrix.
+    /// </summary>
+    /// <param name="points_pos">Matrix of (x, y) tuples.</param>
+    /// <returns>Centred matrix.</returns>
     public List<List<(float, float)>> subtract_mean(List<List<(float, float)>> points_pos)
     {
         // info (paul): getting mean
@@ -8339,16 +10159,31 @@ public class vis_3D : MonoBehaviour
         return points_pos;
     }
 
+    /// <summary>
+    /// Checks whether a value is finite and non-zero.
+    /// </summary>
+    /// <param name="value">Value.</param>
+    /// <returns>True if useful.</returns>
     public bool is_useful(float value)
     {
         bool is_useful = (value != 0f && !float.IsNaN(value) && !float.IsInfinity(value));
         return is_useful;
     }
+    /// <summary>
+    /// Checks whether a value is finite.
+    /// </summary>
+    /// <param name="value">Value.</param>
+    /// <returns>True if not NaN or infinite.</returns>
     public bool is_meaningful(float value)
     {
         bool meaningful = (!float.IsNaN(value) && !float.IsInfinity(value));
         return meaningful;
     }
+    /// <summary>
+    /// Subtracts the grid position (i, j) from tracked point positions (gives the displacement).
+    /// </summary>
+    /// <param name="points_pos">Matrix of positions.</param>
+    /// <returns>Displacement matrix.</returns>
     public List<List<(float, float)>> subtract_grid_pos(List<List<(float, float)>> points_pos)
     {
         for (int i = 0; i < points_pos.Count; i++)
@@ -8378,6 +10213,15 @@ public class vis_3D : MonoBehaviour
         return points_pos;
     }
 
+    /// <summary>
+    /// Loads all flow files, accumulates them to the start frame, and compares with the reference.
+    /// </summary>
+    /// <param name="dir_info_u">Files of the u folder.</param>
+    /// <param name="dir_info_v">Files of the v folder.</param>
+    /// <param name="im_cnt">Number of images (-1 = all).</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <param name="from_path">True to load stored data.</param>
+    /// <returns>Tuple (chosen map, width, height, out-of-plane component).</returns>
     public (List<List<float>>, int, int, List<List<float>>) find_total_match_tex(
         FileInfo[] dir_info_u, FileInfo[] dir_info_v,
         int im_cnt = -1, int t_idx = -1, bool from_path = false)
@@ -8437,6 +10281,13 @@ public class vis_3D : MonoBehaviour
         return (flow_mat_mean, res_x, res_y, stream_z);
     }
 
+    /// <summary>
+    /// Multiplies all flow maps by a factor.
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="scale_fac">Factor.</param>
+    /// <returns>Tuple of scaled maps.</returns>
     public (List<List<List<float>>>, List<List<List<float>>>) scale_flows(List<List<List<float>>> flow_mats_u,
         List<List<List<float>>> flow_mats_v, float scale_fac)
     {
@@ -8458,6 +10309,10 @@ public class vis_3D : MonoBehaviour
         return (flow_mats_u, flow_mats_v);
     }
 
+    /// <summary>
+    /// Loads an externally computed flow map (CSV, exp_normal) for comparison.
+    /// </summary>
+    /// <returns>Matrix.</returns>
     public List<List<float>> manage_load_csv()
     {
         string path = path_dic + "exp_normal/time_flow_v/flow_v_csv.csv";
@@ -8467,11 +10322,25 @@ public class vis_3D : MonoBehaviour
 
         return mat_val;
     }
+    /// <summary>
+    /// Reference image-plane displacement between two samples (wrapper of find_truth_flow).
+    /// </summary>
+    /// <param name="sample_1">First sample.</param>
+    /// <param name="sample_2">Second sample.</param>
+    /// <param name="cam">Camera.</param>
+    /// <returns>Tuple (u, v) reference maps.</returns>
     public (List<List<float>>, List<List<float>>) manage_truth_flow(GameObject sample_1, GameObject sample_2, Camera cam)
     {
         (List<List<float>> stream_u, List<List<float>> stream_v) = find_truth_flow(sample_1, sample_2, cam);
         return (stream_u, stream_v);
     }
+    /// <summary>
+    /// Computes the per-pixel reference displacement between two samples from the vertex displacements and the barycentric pixel assignment.
+    /// </summary>
+    /// <param name="blade_1">First sample.</param>
+    /// <param name="blade_2">Second sample.</param>
+    /// <param name="cam">Camera.</param>
+    /// <returns>Tuple (u, v) reference maps.</returns>
     public (List<List<float>>, List<List<float>>) find_truth_flow(GameObject blade_1, GameObject blade_2, Camera cam)
     {
         // info (paul): find uv flow from start
@@ -8533,6 +10402,19 @@ public class vis_3D : MonoBehaviour
         return (stream_u, stream_v);
     }
 
+    /// <summary>
+    /// Reference displacement of one pixel by barycentric interpolation of the vertex displacements.
+    /// </summary>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="tri_idx">Hit triangle.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="bary">Barycentric coordinates.</param>
+    /// <param name="d_xs">x displacement per vertex.</param>
+    /// <param name="d_ys">y displacement per vertex.</param>
+    /// <param name="d_zs">z displacement per vertex.</param>
+    /// <param name="tris">Triangle index list (optional).</param>
+    /// <returns>Tuple (dx, dy, dz).</returns>
     public (float, float, float) find_truth_flow_ij(int i, int j, int tri_idx, int blade_idx,
         float[] bary, float[] d_xs, float[] d_ys, float[] d_zs, int[] tris = null)
     {
@@ -8545,6 +10427,18 @@ public class vis_3D : MonoBehaviour
         return (d_x_ref, d_y_ref, d_z_ref);
     }
 
+    /// <summary>
+    /// Accumulates the flow from the start frame to a time step (or uses pre-summed fields) and compares it with the reference displacement.
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <param name="texs_albedo_u">Albedo textures (u).</param>
+    /// <param name="texs_albedo_v">Albedo textures (v).</param>
+    /// <param name="from_path">True to load stored data.</param>
+    /// <param name="accum_u">Pre-summed u field (optional).</param>
+    /// <param name="accum_v">Pre-summed v field (optional).</param>
+    /// <returns>Tuple (u, v) maps.</returns>
     public (List<List<float>>, List<List<float>>) manage_match_to_start(
         List<List<List<float>>> flow_mats_u, List<List<List<float>>> flow_mats_v,
         int t_idx, List<Texture2D> texs_albedo_u, List<Texture2D> texs_albedo_v,
@@ -8619,6 +10513,12 @@ public class vis_3D : MonoBehaviour
         return (flow_mat, stream_z);
     }
 
+    /// <summary>
+    /// Upsamples a square matrix by pixel repetition.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="scale">Factor.</param>
+    /// <returns>Upsampled matrix.</returns>
     public List<List<float>> scale_res(List<List<float>> mat,
         int scale = 2)
     {
@@ -8639,6 +10539,12 @@ public class vis_3D : MonoBehaviour
         }
         return scaled;
     }
+    /// <summary>
+    /// Saves the mean displacements of a time step.
+    /// </summary>
+    /// <param name="u_mean">Mean of u.</param>
+    /// <param name="v_mean">Mean of v.</param>
+    /// <param name="blade_idx">Time-step index.</param>
     public void save_means(float u_mean, float v_mean,
         int blade_idx)
     {
@@ -8652,6 +10558,13 @@ public class vis_3D : MonoBehaviour
         save_float(u_mean, full_path: u_path);
         save_float(v_mean, full_path: v_path);
     }
+    /// <summary>
+    /// Sums the frame-to-frame flow fields up to a time step.
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <returns>Tuple of accumulated (u, v).</returns>
     public (List<List<float>>, List<List<float>>) find_accum_flow(List<List<List<float>>> flow_mats_u,
         List<List<List<float>>> flow_mats_v, int t_idx)
     {
@@ -8670,6 +10583,11 @@ public class vis_3D : MonoBehaviour
         return (stream_u, stream_v);
     }
 
+    /// <summary>
+    /// Converts tracked positions into displacements (optionally with debug visualisation).
+    /// </summary>
+    /// <param name="points_now">Tracked positions.</param>
+    /// <returns>Displacements.</returns>
     public List<List<(float, float)>> treat_nice(List<List<(float, float)>> points_now)
     {
         List<List<(float, float)>> points_rel = subtract_grid_pos(points_now);
@@ -8694,25 +10612,46 @@ public class vis_3D : MonoBehaviour
     List<List<float>> value_v = null;
     float value_coverage = float.NaN;
 
+    /// <summary>
+    /// Returns the last reference u map.
+    /// </summary>
+    /// <returns>Map.</returns>
     public List<List<float>> get_ref_u()
     {
         return ref_u;
     }
 
+    /// <summary>
+    /// Returns the last reference v map.
+    /// </summary>
+    /// <returns>Map.</returns>
     public List<List<float>> get_ref_v()
     {
         return ref_v;
     }
 
+    /// <summary>
+    /// Returns the last computed u map.
+    /// </summary>
+    /// <returns>Map.</returns>
     public List<List<float>> get_u()
     {
         return value_u;
     }
 
+    /// <summary>
+    /// Returns the last computed v map.
+    /// </summary>
+    /// <returns>Map.</returns>
     public List<List<float>> get_v()
     {
         return value_v;
     }
+    /// <summary>
+    /// Converts an integer matrix to floats.
+    /// </summary>
+    /// <param name="ints">Integer matrix.</param>
+    /// <returns>Float matrix.</returns>
     public List<List<float>> ints2floats(List<List<int>> ints)
     {
         List<List<float>> floats = zeros_like(ints);
@@ -8728,6 +10667,11 @@ public class vis_3D : MonoBehaviour
 
         return floats;
     }
+    /// <summary>
+    /// Converts a 2D integer array to a float matrix.
+    /// </summary>
+    /// <param name="ints">Integer array.</param>
+    /// <returns>Float matrix.</returns>
     public List<List<float>> ints2floats(int[,] ints)
     {
         List<List<float>> floats = zeros_like(ints);
@@ -8852,6 +10796,11 @@ public class vis_3D : MonoBehaviour
         return (errorU, errorV, truthZ, (float)vStats.count / meshPixels);
     }
 
+    /// <summary>
+    /// Statistics of the finite entries of a map.
+    /// </summary>
+    /// <param name="values">Map.</param>
+    /// <returns>Tuple (count, mean, std, min, max).</returns>
     private static (int count, float mean, float std, float min, float max) lighting_stats(List<List<float>> values)
     {
         int count = 0;
@@ -8871,6 +10820,12 @@ public class vis_3D : MonoBehaviour
             : (count, (float)mean, (float)Math.Sqrt(m2 / count), min, max);
     }
 
+    /// <summary>
+    /// One-line text summary of the statistics of a map.
+    /// </summary>
+    /// <param name="name">Name of the map.</param>
+    /// <param name="values">Map.</param>
+    /// <returns>Text.</returns>
     private static string lighting_summary(string name, List<List<float>> values)
     {
         var stats = lighting_stats(values);
@@ -8880,6 +10835,13 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Computes the displayed map (flow, reference, or error) for the current time step; during sweeps it uses the lighting diagnosis.
+    /// </summary>
+    /// <param name="flow_u">u map.</param>
+    /// <param name="flow_v">v map.</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <returns>Tuple (u result, v result, z result, loss).</returns>
     public (List<List<float>>, List<List<float>>, List<List<float>>, float) manage_flow_or_loss(
         List<List<float>> flow_u, List<List<float>> flow_v, int t_idx)
     {
@@ -8948,6 +10910,15 @@ public class vis_3D : MonoBehaviour
     private List<List<float>> last_stream_u = null;
     private List<List<float>> last_stream_v = null;
 
+    /// <summary>
+    /// Computes the displayed height map (value, reference, or absolute/relative error).
+    /// </summary>
+    /// <param name="heights">Measured heights.</param>
+    /// <param name="heights_ref">Reference heights.</param>
+    /// <param name="scale_factor">Scale factor.</param>
+    /// <param name="threshold">Error clipping threshold.</param>
+    /// <param name="mode">rel or abs.</param>
+    /// <returns>Tuple (map, loss).</returns>
     public (List<List<float>>, float) choose_heights_or_loss(List<List<float>> heights,
         List<List<float>> heights_ref, float scale_factor, float threshold = 10f,
         string mode = "rel")
@@ -8990,6 +10961,17 @@ public class vis_3D : MonoBehaviour
         return (stream_u, coverage);
     }
 
+    /// <summary>
+    /// Computes the displayed flow map per pixel (value, reference, or error) and the statistics of the error.
+    /// </summary>
+    /// <param name="flow_u">u map.</param>
+    /// <param name="flow_v">v map.</param>
+    /// <param name="tri_idx">Triangle index per pixel.</param>
+    /// <param name="barys">Barycentric coordinates per pixel.</param>
+    /// <param name="d_xs">x displacement per vertex.</param>
+    /// <param name="d_ys">y displacement per vertex.</param>
+    /// <param name="d_zs">z displacement per vertex.</param>
+    /// <returns>Tuple (u result, v result, z result, loss).</returns>
     public (List<List<float>>, List<List<float>>, List<List<float>>, float) choose_flow_or_loss(List<List<float>> flow_u,
         List<List<float>> flow_v, int[,] tri_idx, float[][][] barys, float[] d_xs, float[] d_ys, float[] d_zs)
     {
@@ -9074,6 +11056,13 @@ public class vis_3D : MonoBehaviour
         return (stream_u, stream_v, stream_z, coverage);
     }
 
+    /// <summary>
+    /// Writes the value range of the chosen component to the scale label.
+    /// </summary>
+    /// <param name="loss_u_min">Minimum of u.</param>
+    /// <param name="loss_u_max">Maximum of u.</param>
+    /// <param name="loss_v_min">Minimum of v.</param>
+    /// <param name="loss_v_max">Maximum of v.</param>
     public void update_scale_label(float loss_u_min, float loss_u_max, float loss_v_min, float loss_v_max)
     {
         Transform scale_label = canvas.transform.Find("scale_label");
@@ -9089,6 +11078,17 @@ public class vis_3D : MonoBehaviour
             tmpro.text = "min: " + loss_v_min.ToString() + "; max: " + loss_v_max.ToString();
         }
     }
+    /// <summary>
+    /// Writes mean, standard deviation, and range of the chosen component to the scale label.
+    /// </summary>
+    /// <param name="loss_u_mean">Mean of u.</param>
+    /// <param name="loss_u_std">Std of u.</param>
+    /// <param name="loss_u_min">Minimum of u.</param>
+    /// <param name="loss_u_max">Maximum of u.</param>
+    /// <param name="loss_v_mean">Mean of v.</param>
+    /// <param name="loss_v_std">Std of v.</param>
+    /// <param name="loss_v_min">Minimum of v.</param>
+    /// <param name="loss_v_max">Maximum of v.</param>
     public void update_scale_label_ext(float loss_u_mean, float loss_u_std, float loss_u_min, float loss_u_max,
         float loss_v_mean, float loss_v_std, float loss_v_min, float loss_v_max)
     {
@@ -9132,38 +11132,81 @@ public class vis_3D : MonoBehaviour
             loss_v_mean, loss_v_std, loss_v_min, loss_v_max);
     }
 
+    /// <summary>
+    /// Stores the global mean of v.
+    /// </summary>
+    /// <param name="input">Value.</param>
     public void set_v_mean(float input)
     {
         v_mean_global = input;
     }
+    /// <summary>
+    /// Stores the global standard deviation of v.
+    /// </summary>
+    /// <param name="input">Value.</param>
     public void set_v_std(float input)
     {
         v_std_global = input;
     }
+    /// <summary>
+    /// Stores the global minimum of v.
+    /// </summary>
+    /// <param name="input">Value.</param>
     public void set_v_min(float input)
     {
         v_min_global = input;
     }
+    /// <summary>
+    /// Stores the global maximum of v.
+    /// </summary>
+    /// <param name="input">Value.</param>
     public void set_v_max(float input)
     {
         v_max_global = input;
     }
+    /// <summary>
+    /// Returns the global mean of v.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_v_mean()
     {
         return v_mean_global;
     }
+    /// <summary>
+    /// Returns the global standard deviation of v.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_v_std()
     {
         return v_std_global;
     }
+    /// <summary>
+    /// Returns the global minimum of v.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_v_min()
     {
         return v_min_global;
     }
+    /// <summary>
+    /// Returns the global maximum of v.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_v_max()
     {
         return v_max_global;
     }
+    /// <summary>
+    /// Appends the statistics of the current map with all settings to the result files (and the sweep TSV).
+    /// </summary>
+    /// <param name="loss_u_mean">Mean of u.</param>
+    /// <param name="loss_u_std">Std of u.</param>
+    /// <param name="loss_u_min">Minimum of u.</param>
+    /// <param name="loss_u_max">Maximum of u.</param>
+    /// <param name="loss_v_mean">Mean of v.</param>
+    /// <param name="loss_v_std">Std of v.</param>
+    /// <param name="loss_v_min">Minimum of v.</param>
+    /// <param name="loss_v_max">Maximum of v.</param>
     public void write_info(float loss_u_mean, float loss_u_std, float loss_u_min, float loss_u_max,
         float loss_v_mean, float loss_v_std, float loss_v_min, float loss_v_max)
     {
@@ -9228,12 +11271,20 @@ public class vis_3D : MonoBehaviour
     //  (Speckle-Durchmesser in Bildpixeln = d * Aufloesung / 100). Bei Fehlern NaN, der Sweep laeuft weiter.
     //29092026 + Regularisierer (TV/TGV) und Dehnungsglaettung sigma, damit Tabellen eindeutig zuzuordnen sind
     const string SWEEP_EXTRA_HEADER = "\tu_mae\tv_mae\texx_rel_mae\teyy_rel_mae\trender_res\tregularization\tstrain_sigma";
+    /// <summary>
+    /// Key of the analysis setup (resolution, TV/TGV, strain sigma) for the sweep TSV.
+    /// </summary>
+    /// <returns>Tab-separated text.</returns>
     string sweep_setup_key()
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
         return get_render_res().ToString(ci) + "\t" + (get_tv_use_tgv() && get_tv_use_gpu() ? "TGV" : "TV")
             + "\t" + strain_sigma.ToString("G6", ci);
     }
+    /// <summary>
+    /// Additional metrics of the current analysis for the sweep TSV.
+    /// </summary>
+    /// <returns>Tab-separated text.</returns>
     string sweep_extra_metrics()
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -9254,6 +11305,11 @@ public class vis_3D : MonoBehaviour
     //28092026 Nutzerwunsch: Diagramm zu "Licht/Rauschen/Speckle" im Programm (orientiert an Abb. 5/6 im Paper):
     //  scripts/plot_sweeps.py erzeugt <analysis>_sweep_plot.png (rel. Verschiebungsfehler und rel. Dehnungsfehler
     //  ueber dem Parameter, Plateau schattiert, Trend gepunktet); das Bild kommt vorne in die Galerie.
+    /// <summary>
+    /// Creates the sweep diagram with scripts/plot_sweeps.py and puts it at the front of the gallery.
+    /// </summary>
+    /// <param name="analysis">Name of the analysis (e.g. lighting).</param>
+    /// <returns>Task.</returns>
     public async Task show_sweep_plot(string analysis)
     {
         string tsv = root_path + analysis + "_sweep.tsv";
@@ -9279,6 +11335,20 @@ public class vis_3D : MonoBehaviour
     int i_test = 330;
     int j_test = 230;
 
+    /// <summary>
+    /// Displayed value of one pixel of the height map (value, reference, or error).
+    /// </summary>
+    /// <param name="stream_u">Measured heights.</param>
+    /// <param name="stream_ref">Reference heights.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="u_min">Lower display limit.</param>
+    /// <param name="u_max">Upper display limit.</param>
+    /// <param name="scale_factor">Scale factor.</param>
+    /// <param name="threshold">Lower threshold of the reference.</param>
+    /// <param name="threshold_up">Error clipping threshold.</param>
+    /// <param name="mode">rel or abs.</param>
+    /// <returns>Tuple (value, valid).</returns>
     public (float, bool) heights_or_loss_ij(List<List<float>> stream_u, List<List<float>> stream_ref,
         int i, int j, float u_min, float u_max, float scale_factor, float threshold = 0.1f,
         float threshold_up = 0.01f, string mode = "rel")
@@ -9381,12 +11451,36 @@ public class vis_3D : MonoBehaviour
 
         return (val_u, float.IsNaN(val_u)); //(err_x_rel, err_y_rel);// (err_x_rel, err_y_rel);//(d_x_ref, d_y_ref);//17062024 (err_x_rel, err_y_rel);
     }
+    /// <summary>
+    /// Clips a value at an upper threshold.
+    /// </summary>
+    /// <param name="value">Value.</param>
+    /// <param name="threshold">Upper limit.</param>
+    /// <returns>Clipped value.</returns>
     public float curb_err(float value, float threshold)
     {
         value = Mathf.Clamp(value, value, threshold);
         return value;
     }
 
+    /// <summary>
+    /// Displayed value of one pixel of the flow map (value, reference, or error) from the barycentric reference displacement.
+    /// </summary>
+    /// <param name="stream_u">u map.</param>
+    /// <param name="stream_v">v map.</param>
+    /// <param name="d_xs">x displacement per vertex.</param>
+    /// <param name="d_ys">y displacement per vertex.</param>
+    /// <param name="d_zs">z displacement per vertex.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="tri_idx">Hit triangle.</param>
+    /// <param name="bary">Barycentric coordinates.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="u_min">Lower limit of u.</param>
+    /// <param name="u_max">Upper limit of u.</param>
+    /// <param name="v_min">Lower limit of v.</param>
+    /// <param name="v_max">Upper limit of v.</param>
+    /// <returns>Tuple (u, v, z, valid).</returns>
     public (float, float, float, bool) flow_or_loss_ij(List<List<float>> stream_u, List<List<float>> stream_v,
         float[] d_xs, float[] d_ys, float[] d_zs, int i, int j, int tri_idx, float[] bary, int blade_idx,
         float u_min, float u_max, float v_min, float v_max)
@@ -9473,6 +11567,11 @@ public class vis_3D : MonoBehaviour
         return (val_u, val_v, val_z, float.IsNaN(val_v)); //(err_x_rel, err_y_rel);// (err_x_rel, err_y_rel);//(d_x_ref, d_y_ref);//17062024 (err_x_rel, err_y_rel);
     }
 
+    /// <summary>
+    /// Marks relative errors above 1 with a fixed value.
+    /// </summary>
+    /// <param name="err_x_rel">Relative error.</param>
+    /// <returns>Error or marker value.</returns>
     public float threshold_err(float err_x_rel)
     {
         float threshold = 1.0f;
@@ -9487,10 +11586,18 @@ public class vis_3D : MonoBehaviour
         return err_x_rel;
     }
 
+    /// <summary>
+    /// Returns the display mode of the flow (value, reference, error).
+    /// </summary>
+    /// <returns>Mode.</returns>
     public string get_plot_mode()
     {
         return plot_mode;
     }
+    /// <summary>
+    /// Returns the display mode of the current map type (flow or heights).
+    /// </summary>
+    /// <returns>Mode.</returns>
     public string get_plot_or_heights_mode()
     {
         string mode = null;
@@ -9504,6 +11611,11 @@ public class vis_3D : MonoBehaviour
         }
         return mode;
     }
+    /// <summary>
+    /// Sets the display mode of the flow.
+    /// </summary>
+    /// <param name="val">Mode.</param>
+    /// <param name="is_internal">True if set internally (no UI update).</param>
     public void set_plot_mode(string val, bool is_internal = false)
     {
         this.plot_mode = val;
@@ -9514,16 +11626,33 @@ public class vis_3D : MonoBehaviour
             //set_plot_mode("", is_internal: true);
         }
     }
+    /// <summary>
+    /// Sets the displayed map type (uv, heights, ...).
+    /// </summary>
+    /// <param name="value">Map type.</param>
     public void set_paint_with(string value)
     {
         this.paint_with = value;
     }
 
+    /// <summary>
+    /// Returns the displayed map type.
+    /// </summary>
+    /// <returns>Map type.</returns>
     public string get_paint_with()
     {
         return this.paint_with;
     }
 
+    /// <summary>
+    /// Vertex indices of a triangle.
+    /// </summary>
+    /// <param name="i_idx">Column.</param>
+    /// <param name="j_idx">Row.</param>
+    /// <param name="tri_idx">Triangle index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="blade_tris">Triangle index list (optional).</param>
+    /// <returns>Tuple of the three vertex indices.</returns>
     public (int, int, int) find_node(int i_idx, int j_idx, int tri_idx, int blade_idx,
         int[] blade_tris = null)
     {
@@ -9583,6 +11712,13 @@ public class vis_3D : MonoBehaviour
             return (node_0, node_1, node_2);
     }
 
+    /// <summary>
+    /// Hit triangle and barycentric coordinates of a pixel (ray cast).
+    /// </summary>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="cam">Camera.</param>
+    /// <returns>Tuple (triangle index, barycentric coordinates).</returns>
     public (int, float[]) find_triangle(int i, int j, Camera cam)
     {
         // TODO: Pick the closest vertex or interpolate would be even better, instead of
@@ -9611,6 +11747,13 @@ public class vis_3D : MonoBehaviour
         return (tri_idx, bary);
     }
 
+    /// <summary>
+    /// Selects the u or v component.
+    /// </summary>
+    /// <param name="stream_u">u map.</param>
+    /// <param name="stream_v">v map.</param>
+    /// <param name="u_v_mode">u or v.</param>
+    /// <returns>Chosen map.</returns>
     public List<List<float>> choose_coord(List<List<float>> stream_u, List<List<float>> stream_v, string u_v_mode)
     {
         List<List<float>> flow_mats_chosen = new List<List<float>>();
@@ -9629,6 +11772,11 @@ public class vis_3D : MonoBehaviour
         return flow_mats_chosen;
     }
 
+    /// <summary>
+    /// Normalises both components of a point matrix.
+    /// </summary>
+    /// <param name="points_fluc">Matrix of (x, y) tuples.</param>
+    /// <returns>Normalised matrix.</returns>
     public List<List<(float, float)>> norm_points(List<List<(float, float)>> points_fluc)
     {
         (List<List<float>> points_x, List<List<float>> points_y) = split_match(points_fluc);//points_fluc);
@@ -9638,6 +11786,13 @@ public class vis_3D : MonoBehaviour
         return points_normed;
     }
 
+    /// <summary>
+    /// Debugging helper: optionally replaces the map by an albedo texture.
+    /// </summary>
+    /// <param name="flow_mats_chosen">Chosen map.</param>
+    /// <param name="texs_albedo_u">Albedo textures (u).</param>
+    /// <param name="texs_albedo_v">Albedo textures (v).</param>
+    /// <returns>Map.</returns>
     public List<List<float>> to_tex_if(List<List<float>> flow_mats_chosen,
         List<Texture2D> texs_albedo_u, List<Texture2D> texs_albedo_v)
     {
@@ -9661,6 +11816,11 @@ public class vis_3D : MonoBehaviour
         return flow_mats_chosen;
     }
 
+    /// <summary>
+    /// Splits an integer tuple matrix into two float matrices.
+    /// </summary>
+    /// <param name="match_mat">Matrix of (x, y) tuples.</param>
+    /// <returns>Tuple (x map, y map).</returns>
     public (List<List<float>>, List<List<float>>) split_match(
         List<List<(int, int)>> match_mat)
     {
@@ -9679,6 +11839,11 @@ public class vis_3D : MonoBehaviour
         return (match_u, match_v);
     }
 
+    /// <summary>
+    /// Splits a float tuple matrix into two float matrices.
+    /// </summary>
+    /// <param name="match_mat">Matrix of (x, y) tuples.</param>
+    /// <returns>Tuple (x map, y map).</returns>
     public (List<List<float>>, List<List<float>>) split_match(
     List<List<(float, float)>> match_mat)
     {
@@ -9697,6 +11862,12 @@ public class vis_3D : MonoBehaviour
         return (match_u, match_v);
     }
 
+    /// <summary>
+    /// Merges two matrices into a tuple matrix.
+    /// </summary>
+    /// <param name="mat_1">x map.</param>
+    /// <param name="mat_2">y map.</param>
+    /// <returns>Matrix of (x, y) tuples.</returns>
     public List<List<(float, float)>> merge(List<List<float>> mat_1, List<List<float>> mat_2)
     {
         List<List<(float, float)>> merged = zero_tuples_like(mat_1);
@@ -9712,6 +11883,13 @@ public class vis_3D : MonoBehaviour
         return merged;
     }
 
+    /// <summary>
+    /// Fills a point matrix with the grid positions (offset by i_min, j_min).
+    /// </summary>
+    /// <param name="points_now">Point matrix.</param>
+    /// <param name="i_min">Column offset.</param>
+    /// <param name="j_min">Row offset.</param>
+    /// <returns>Grid matrix.</returns>
     public List<List<(float, float)>> make_grid(List<List<(float, float)>> points_now, int i_min, int j_min)
     {
         for (int i = 0; i < points_now.Count; i++)
@@ -9727,6 +11905,14 @@ public class vis_3D : MonoBehaviour
         return points_now;
     }
 
+    /// <summary>
+    /// Tracks all pixels over the frames back to the start frame (Lagrangian accumulation of the flow).
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="t_min">First time step.</param>
+    /// <param name="t_max">Last time step.</param>
+    /// <returns>Tracked positions.</returns>
     public List<List<(float, float)>> match_all_to_start(List<List<List<float>>> flow_mats_u,
     List<List<List<float>>> flow_mats_v, int t_min = -1, int t_max = -1)
     {
@@ -9763,6 +11949,11 @@ public class vis_3D : MonoBehaviour
 
         return points_now;
     }
+    /// <summary>
+    /// Mean filter of a map (inner area only).
+    /// </summary>
+    /// <param name="points_now">Map.</param>
+    /// <returns>Filtered map.</returns>
     public List<List<float>> filter_mean_comp(
     List<List<float>> points_now)
     {
@@ -9819,6 +12010,11 @@ public class vis_3D : MonoBehaviour
 
         return points_next;
     }
+    /// <summary>
+    /// Mean filter of a tuple matrix (inner area only).
+    /// </summary>
+    /// <param name="points_now">Matrix of (x, y) tuples.</param>
+    /// <returns>Filtered matrix.</returns>
     public List<List<(float, float)>> filter_mean(
         List<List<(float, float)>> points_now)
     {
@@ -9839,6 +12035,14 @@ public class vis_3D : MonoBehaviour
 
         return points_next;
     }
+    /// <summary>
+    /// Mean of a square neighbourhood of a pixel (finite values only).
+    /// </summary>
+    /// <param name="points_now">Map.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="plaquette_size">Half width of the neighbourhood.</param>
+    /// <returns>Mean.</returns>
     public float plain_conv_comp(List<List<float>>
         points_now, int i, int j, int plaquette_size = 5)
     {
@@ -9885,6 +12089,14 @@ public class vis_3D : MonoBehaviour
         //    points_now[i + 1][j].Item2);
         return item_1;
     }
+    /// <summary>
+    /// Mean of a square neighbourhood of a pixel for both components.
+    /// </summary>
+    /// <param name="points_now">Matrix of (x, y) tuples.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="plaquette_size">Half width of the neighbourhood.</param>
+    /// <returns>Tuple of means.</returns>
     public (float, float) plain_conv(List<List<(float, float)>>
         points_now, int i, int j, int plaquette_size = 1)
     {
@@ -9934,6 +12146,11 @@ public class vis_3D : MonoBehaviour
         //    points_now[i + 1][j].Item2);
         return (item_1, item_2);
     }
+    /// <summary>
+    /// Debugging helper: marks a line in a point matrix.
+    /// </summary>
+    /// <param name="points">Point matrix.</param>
+    /// <returns>Modified matrix.</returns>
     public List<List<(float, float)>> paint_for_debug(
         List<List<(float, float)>> points)
     {
@@ -9947,6 +12164,19 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Tracks the points of a sub-area over one time step.
+    /// </summary>
+    /// <param name="padding">Border width.</param>
+    /// <param name="i_min">First column.</param>
+    /// <param name="i_max">Last column.</param>
+    /// <param name="j_min">First row.</param>
+    /// <param name="j_max">Last row.</param>
+    /// <param name="t">Time step.</param>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="points_now">Current positions.</param>
+    /// <returns>New positions.</returns>
     public List<List<(float, float)>> match_slice(int padding, int i_min, int i_max, int j_min, int j_max, int t,
         List<List<List<float>>> flow_mats_u, List<List<List<float>>> flow_mats_v, List<List<(float, float)>> points_now)
     {
@@ -9964,6 +12194,17 @@ public class vis_3D : MonoBehaviour
         }
         return points_next;
     }
+    /// <summary>
+    /// Tracks one point over the frames by bilinear interpolation of the flow.
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="point">Start position.</param>
+    /// <param name="t_min">First time step.</param>
+    /// <param name="t_max">Last time step.</param>
+    /// <param name="i">Column (debugging).</param>
+    /// <param name="j">Row (debugging).</param>
+    /// <returns>End position.</returns>
     public (float, float) match_to_start(List<List<List<float>>> flow_mats_u,
     List<List<List<float>>> flow_mats_v, (float, float) point, int t_min = -1,
     int t_max = -1, int i = -1, int j = -1)
@@ -10000,6 +12241,13 @@ public class vis_3D : MonoBehaviour
         return vals_l[0];
     }
 
+    /// <summary>
+    /// Older version of the point tracking (unused).
+    /// </summary>
+    /// <param name="flow_mats_u">u maps per time step.</param>
+    /// <param name="flow_mats_v">v maps per time step.</param>
+    /// <param name="im_cnt">Number of images.</param>
+    /// <returns>Match matrix.</returns>
     public List<List<(int, int)>> match_to_start_old(List<List<List<float>>> flow_mats_u,
         List<List<List<float>>> flow_mats_v, int im_cnt = -1)
     {
@@ -10023,6 +12271,13 @@ public class vis_3D : MonoBehaviour
         return total_match;
     }
 
+    /// <summary>
+    /// Values of the four neighbouring pixels and the fractional offsets of a point (for bilinear interpolation).
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="point_x">x position.</param>
+    /// <param name="point_y">y position.</param>
+    /// <returns>Tuple (v00, v01, v10, v11, rest_x, rest_y).</returns>
     public (float, float, float, float, float, float) find_interpolate_square(
         List<List<float>> mat, float point_x, float point_y)
     {
@@ -10069,6 +12324,12 @@ public class vis_3D : MonoBehaviour
         return (val_00, val_01, val_10, val_11, rest_x, rest_y);
     }
 
+    /// <summary>
+    /// Checks whether a pixel lies inside the matrix.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="point">Pixel (i, j).</param>
+    /// <returns>True if inside.</returns>
     public bool check_if_in_frame(List<List<float>> mat, (int, int) point)
     {
         int len_x = mat.Count;
@@ -10082,6 +12343,15 @@ public class vis_3D : MonoBehaviour
         return in_frame;
     }
 
+    /// <summary>
+    /// Rough extrapolation of a value outside the matrix from the nearest valid pixels.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="lower_x">Lower x index.</param>
+    /// <param name="upper_x">Upper x index.</param>
+    /// <param name="lower_y">Lower y index.</param>
+    /// <param name="upper_y">Upper y index.</param>
+    /// <returns>Value.</returns>
     public float extrapolate(List<List<float>> mat, int lower_x, int upper_x, int lower_y, int upper_y)
     {
         // info (paul): a very rough way to interpolate, I am too lazy now to make it more complex, 
@@ -10153,6 +12423,13 @@ public class vis_3D : MonoBehaviour
         return val;
 
     }
+    /// <summary>
+    /// Bilinearly interpolated value at a sub-pixel position.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="point_x">x position.</param>
+    /// <param name="point_y">y position.</param>
+    /// <returns>Value.</returns>
     public float interpolate_at(List<List<float>> mat, float point_x, float point_y)
     {
         // info (paul): get the linearly interpolated value at a point (point_x, point_y)
@@ -10170,6 +12447,15 @@ public class vis_3D : MonoBehaviour
         return result;
     }
 
+    /// <summary>
+    /// Moves a point by the interpolated flow (u, v).
+    /// </summary>
+    /// <param name="mat_u">u map.</param>
+    /// <param name="mat_v">v map.</param>
+    /// <param name="point">Position.</param>
+    /// <param name="i">Column (debugging).</param>
+    /// <param name="j">Row (debugging).</param>
+    /// <returns>New position.</returns>
     public (float, float) find_next_point(List<List<float>> mat_u, List<List<float>> mat_v, (float, float) point,
         int i = -1, int j = -1)
     {
@@ -10188,6 +12474,11 @@ public class vis_3D : MonoBehaviour
         return (x_next, y_next);
     }
 
+    /// <summary>
+    /// Legacy: chains integer match matrices over all time steps.
+    /// </summary>
+    /// <param name="match_mats">Match matrices per time step.</param>
+    /// <returns>Total match matrix.</returns>
     public List<List<(int, int)>> find_total_match(List<List<List<(int, int)>>> match_mats)
     {
         // info (paul): calculate the global match_matrix and assign initial values
@@ -10204,6 +12495,13 @@ public class vis_3D : MonoBehaviour
         return total_match;
     }
 
+    /// <summary>
+    /// Legacy: applies the match matrix of one time step to the total match.
+    /// </summary>
+    /// <param name="match_mats">Match matrices.</param>
+    /// <param name="total_match">Total match.</param>
+    /// <param name="t">Time step.</param>
+    /// <returns>Updated total match.</returns>
     public List<List<(int, int)>> make_next_match(
         List<List<List<(int, int)>>> match_mats,
         List<List<(int, int)>> total_match, int t)
@@ -10222,6 +12520,11 @@ public class vis_3D : MonoBehaviour
         return total_match;
     }
 
+    /// <summary>
+    /// Legacy: initialises the total match with the identity.
+    /// </summary>
+    /// <param name="match_mats">Match matrices.</param>
+    /// <returns>Identity match matrix.</returns>
     public List<List<(int, int)>> init_total_match_mat(List<List<List<(int, int)>>> match_mats)
     {
         List<List<(int, int)>> total_match = zeros_like(match_mats[0]);
@@ -10234,6 +12537,13 @@ public class vis_3D : MonoBehaviour
         }
         return total_match;
     }
+    /// <summary>
+    /// Matrix of (0, 0) float tuples.
+    /// </summary>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <param name="type">Element type (float).</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<(float, float)>> zero_tuples_of_size(int len_x, int len_y, string type = "float")
     {
         List<List<(float, float)>> zeros = new List<List<(float, float)>>();
@@ -10249,6 +12559,14 @@ public class vis_3D : MonoBehaviour
 
         return zeros;
     }
+    /// <summary>
+    /// 3D array of (0, 0) float tuples.
+    /// </summary>
+    /// <param name="len_t">Number of time steps.</param>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <param name="type">Element type (float).</param>
+    /// <returns>Zero array.</returns>
     public List<List<List<(float, float)>>> zero_tuples_of_size(int len_t, int len_x, int len_y, string type = "float")
     {
         List<List<List<(float, float)>>> tuples = new List<List<List<(float, float)>>>();
@@ -10271,6 +12589,12 @@ public class vis_3D : MonoBehaviour
 
         return tuples;
     }
+    /// <summary>
+    /// Matrix of (0, 0) integer tuples.
+    /// </summary>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<(int, int)>> zero_tuples_of_size(int len_x, int len_y)
     {
         List<List<(int, int)>> zeros = new List<List<(int, int)>>();
@@ -10286,6 +12610,12 @@ public class vis_3D : MonoBehaviour
 
         return zeros;
     }
+    /// <summary>
+    /// Float matrix of zeros.
+    /// </summary>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> zeros_of_size(int len_x, int len_y)
     {
         List<List<float>> zeros = new List<List<float>>();
@@ -10301,6 +12631,13 @@ public class vis_3D : MonoBehaviour
 
         return zeros;
     }
+    /// <summary>
+    /// 3D float array of zeros.
+    /// </summary>
+    /// <param name="len_x">First dimension.</param>
+    /// <param name="len_y">Second dimension.</param>
+    /// <param name="len_z">Third dimension.</param>
+    /// <returns>Zero array.</returns>
     public List<List<List<float>>> zeros_of_size(int len_x, int len_y, int len_z)
     {
         List<List<List<float>>> zeros = new List<List<List<float>>>();
@@ -10320,6 +12657,12 @@ public class vis_3D : MonoBehaviour
 
         return zeros;
     }
+    /// <summary>
+    /// Double matrix of zeros.
+    /// </summary>
+    /// <param name="len_x">Number of columns.</param>
+    /// <param name="len_y">Number of rows.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<double>> doubles_of_size(int len_x, int len_y)
     {
         List<List<double>> zeros = new List<List<double>>();
@@ -10335,6 +12678,13 @@ public class vis_3D : MonoBehaviour
 
         return zeros;
     }
+    /// <summary>
+    /// Legacy: integer match matrix of one time step from rounded flow.
+    /// </summary>
+    /// <param name="mats_u">u maps.</param>
+    /// <param name="mats_v">v maps.</param>
+    /// <param name="t_idx">Time index.</param>
+    /// <returns>Match matrix.</returns>
     public List<List<(int, int)>> match_at_t(List<List<List<float>>> mats_u, List<List<List<float>>> mats_v, int t_idx)
     {
         // info (paul): 
@@ -10374,6 +12724,10 @@ public class vis_3D : MonoBehaviour
         return match_t;
     }
 
+    /// <summary>
+    /// Legacy: converts a disparity matrix into a pixel match matrix (unfinished).
+    /// </summary>
+    /// <param name="disps">Disparity matrix.</param>
     public void disp2match(List<List<float>> disps)
     {
         // info (paul): convert the disparity matrix into a matrix, 
@@ -10431,6 +12785,14 @@ public class vis_3D : MonoBehaviour
         return (mats_u, mats_v, texs_albedo_u, texs_albedo_v, res_x, res_y);
     }
 
+    /// <summary>
+    /// Loads the u flow map of a time step (float copy .f32 if current, otherwise the PNG).
+    /// </summary>
+    /// <param name="flow_files">Assigned flow files.</param>
+    /// <param name="keys_u">Time indices of the u files.</param>
+    /// <param name="texs_albedo_u">Collects the loaded textures.</param>
+    /// <param name="blade_idx">Time index.</param>
+    /// <returns>u map.</returns>
     public List<List<float>> load_flow_u(Dictionary<string, Dictionary<int, FileInfo>> flow_files,
         List<int> keys_u, List<Texture2D> texs_albedo_u, int blade_idx = -1)
     {
@@ -10476,6 +12838,14 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Loads the v flow map of a time step (float copy .f32 if current, otherwise the PNG).
+    /// </summary>
+    /// <param name="flow_files">Assigned flow files.</param>
+    /// <param name="keys_v">Time indices of the v files.</param>
+    /// <param name="texs_albedo_v">Collects the loaded textures.</param>
+    /// <param name="blade_idx">Time index.</param>
+    /// <returns>v map.</returns>
     public List<List<float>> load_flow_v(Dictionary<string, Dictionary<int, FileInfo>> flow_files,
         List<int> keys_v, List<Texture2D> texs_albedo_v, int blade_idx = -1)
     {
@@ -10515,6 +12885,11 @@ public class vis_3D : MonoBehaviour
     //  Gueltig nur, wenn nicht aelter als das PNG.
     const int FLOW_F32_MAGIC = 0x32334646; // "FF32"
 
+    /// <summary>
+    /// Writes a lossless float copy of a flow map next to the PNG (&lt;png&gt;.f32: magic, n, m, float32 values).
+    /// </summary>
+    /// <param name="mat">Flow map.</param>
+    /// <param name="png_path">Path of the PNG.</param>
     void write_flow_float_copy(List<List<float>> mat, string png_path)
     {
         try
@@ -10539,6 +12914,11 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Reads the float copy of a flow map if it exists and is not older than the PNG.
+    /// </summary>
+    /// <param name="png_path">Path of the PNG.</param>
+    /// <returns>Float texture, or null.</returns>
     Texture2D read_flow_float_copy(string png_path)
     {
         string path = png_path + ".f32";
@@ -10565,6 +12945,11 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Reads width and height from the header of PNG bytes.
+    /// </summary>
+    /// <param name="im_bytes_u">Image bytes.</param>
+    /// <returns>Tuple (width, height).</returns>
     public (int, int) bytes2res(byte[] im_bytes_u)
     {
         // info (paul): test ints:
@@ -10596,6 +12981,13 @@ public class vis_3D : MonoBehaviour
         return (res_x, res_y);
     }
 
+    /// <summary>
+    /// Computes the strain map from a displacement map (derivatives in the object plane, optionally with the height component).
+    /// </summary>
+    /// <param name="mat_pre">Displacement map.</param>
+    /// <param name="heights_chosen">Height map.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Strain map.</returns>
     public List<List<float>> calc_strain(List<List<float>> mat_pre,
         List<List<float>> heights_chosen, List<List<float>> stream_z)
     {
@@ -10646,6 +13038,11 @@ public class vis_3D : MonoBehaviour
         return mat_displayed;
     }
 
+    /// <summary>
+    /// Converts image-plane displacements (pixels) to object-plane displacements with the field of view.
+    /// </summary>
+    /// <param name="mat_pre">Displacement map in pixels.</param>
+    /// <returns>Displacement map in object units.</returns>
     public List<List<float>> unproj_flow(List<List<float>> mat_pre)
     {
         List<List<float>> unproj = copy_mat(mat_pre);
@@ -10715,6 +13112,11 @@ public class vis_3D : MonoBehaviour
     //    return tex;
     //}
 
+    /// <summary>
+    /// Older texture-based strain computation (unused).
+    /// </summary>
+    /// <param name="tex_input">Displacement texture.</param>
+    /// <returns>Strain texture.</returns>
     public Texture2D calc_strain_copy(Texture2D tex_input)
     {
         // info (paul): calculate e.g. the strain field from the
@@ -10754,6 +13156,12 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Converts a matrix to a float texture.
+    /// </summary>
+    /// <param name="mat_1">Matrix.</param>
+    /// <param name="with_switch_dims">True to swap the dimensions.</param>
+    /// <returns>Texture.</returns>
     public Texture2D mat2tex(List<List<float>> mat_1, bool with_switch_dims = false)
     {
         // perh. TODO: at some point make dim_switch false by default and not true
@@ -10770,6 +13178,13 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Converts a flat list to a texture.
+    /// </summary>
+    /// <param name="floats">Values.</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <returns>Texture.</returns>
     public Texture2D floats2tex(List<float> floats, int width, int height)
     {
         Color[] cols = new Color[width * height];
@@ -10785,6 +13200,13 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Reads one colour channel of a texture as a flat list.
+    /// </summary>
+    /// <param name="tex">Texture.</param>
+    /// <param name="with_switch_dims">True to swap the dimensions.</param>
+    /// <param name="color_channel">Channel index.</param>
+    /// <returns>Values.</returns>
     public List<float> tex2floats(Texture2D tex, bool with_switch_dims = true, int color_channel = 0)//15052024 , int res_x, int res_y)
     {
         int res_x = tex.width;
@@ -10806,6 +13228,13 @@ public class vis_3D : MonoBehaviour
 
         return floats;
     }
+    /// <summary>
+    /// Reads a texture as a matrix.
+    /// </summary>
+    /// <param name="tex">Texture.</param>
+    /// <param name="with_switch_dims">True to swap the dimensions.</param>
+    /// <param name="for_im">True for image gray values.</param>
+    /// <returns>Matrix.</returns>
     public List<List<float>> tex2mat(Texture2D tex, bool with_switch_dims = true, 
         bool for_im = false)//15052024 , int res_x, int res_y)
     {
@@ -10830,6 +13259,11 @@ public class vis_3D : MonoBehaviour
         }
         return mat;
     }
+    /// <summary>
+    /// Sum of the red channel of a colour matrix.
+    /// </summary>
+    /// <param name="cols">Colour matrix.</param>
+    /// <returns>Sum.</returns>
     public float sum_cols_r(UnityEngine.Color[,] cols)
     {
         float sum = 0f;
@@ -10844,6 +13278,12 @@ public class vis_3D : MonoBehaviour
         return sum;
     }
 
+    /// <summary>
+    /// Derivatives of a map in x and y.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Tuple (d/dx, d/dy).</returns>
     public (List<List<float>>, List<List<float>>) find_physics_filter(List<List<float>> mat,
         List<List<float>> stream_z)
     {
@@ -10857,6 +13297,15 @@ public class vis_3D : MonoBehaviour
         return (mat_1, mat_2);
     }
 
+    /// <summary>
+    /// Mean and standard deviation of a map in the inner area (without border, optional coverage limit).
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="span">Size of the evaluation window.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <param name="coverage">Share of the image to evaluate (NaN = default).</param>
+    /// <param name="padding">Border width.</param>
+    /// <returns>Tuple (mean, std).</returns>
     public (float, float) find_mean_in_all(List<List<float>> mat, int span = 20,
         bool only_meaningful = true, float coverage = float.NaN, int padding = 20)
     {
@@ -10922,6 +13371,14 @@ public class vis_3D : MonoBehaviour
 
         return (mean, sq_mean); //11112024 (mean_covered, sq_mean_covered);
     }
+    /// <summary>
+    /// Mean and standard deviation of a map in a window.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="span">Window size.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <param name="j_off">Row offset of the window.</param>
+    /// <returns>Tuple (mean, std).</returns>
     public (float, float) find_mean_in_span(List<List<float>> mat, int span = 20, bool only_meaningful = true, int j_off = 50)
     {
         // info (paul): "only_meaningful" says, that Infinity or NaN values will
@@ -10976,6 +13433,17 @@ public class vis_3D : MonoBehaviour
         return (mean, sq_mean);
     }
 
+    /// <summary>
+    /// Standard deviation of a map in a rectangle.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="mean">Mean.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <param name="i_min">First column.</param>
+    /// <param name="i_max">Last column.</param>
+    /// <param name="j_min">First row.</param>
+    /// <param name="j_max">Last row.</param>
+    /// <returns>Standard deviation.</returns>
     public float find_mat_std_1(List<List<float>> mat, float mean, bool only_meaningful,
         int i_min, int i_max, int j_min, int j_max)
     {
@@ -11000,6 +13468,17 @@ public class vis_3D : MonoBehaviour
         float sq_mean = sq_sum / ((float)(cnt));
         return sq_mean;
     }
+    /// <summary>
+    /// Standard deviation of a map in a rectangle (variant).
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="mean">Mean.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <param name="i_min">First column.</param>
+    /// <param name="i_max">Last column.</param>
+    /// <param name="j_min">First row.</param>
+    /// <param name="j_max">Last row.</param>
+    /// <returns>Standard deviation.</returns>
     public float find_mat_std_2(List<List<float>> mat, float mean, bool only_meaningful,
     int i_min, int i_max, int j_min, int j_max)
     {
@@ -11025,6 +13504,14 @@ public class vis_3D : MonoBehaviour
         float std = Mathf.Sqrt(sq_mean);
         return sq_mean;
     }
+    /// <summary>
+    /// Minimum of a list (optionally of a section).
+    /// </summary>
+    /// <param name="u">Values.</param>
+    /// <param name="n_x">Width of the section.</param>
+    /// <param name="n_y">Height of the section.</param>
+    /// <param name="offset">Start index.</param>
+    /// <returns>Minimum.</returns>
     float find_min(List<float> u, int n_x = -1, int n_y = -1, int offset = 0)
     {
         List<float> u_taken = u;
@@ -11036,6 +13523,11 @@ public class vis_3D : MonoBehaviour
         return min_val;
     }
 
+    /// <summary>
+    /// Minimum of a jagged array.
+    /// </summary>
+    /// <param name="jaggedArray">Array.</param>
+    /// <returns>Minimum.</returns>
     float find_min(float[][] jaggedArray)
     {
         float minValue = float.MaxValue; // 1. Start with the LARGEST possible value
@@ -11055,6 +13547,11 @@ public class vis_3D : MonoBehaviour
         }
         return minValue;
     }
+    /// <summary>
+    /// Maximum of a jagged array.
+    /// </summary>
+    /// <param name="jaggedArray">Array.</param>
+    /// <returns>Maximum.</returns>
     float find_max(float[][] jaggedArray)
     {
         // info (paul): max of float[][]
@@ -11075,6 +13572,14 @@ public class vis_3D : MonoBehaviour
         return maxValue;
     }
 
+    /// <summary>
+    /// Maximum of a list (optionally of a section).
+    /// </summary>
+    /// <param name="u">Values.</param>
+    /// <param name="n_x">Width of the section.</param>
+    /// <param name="n_y">Height of the section.</param>
+    /// <param name="offset">Start index.</param>
+    /// <returns>Maximum.</returns>
     float find_max(List<float> u, int n_x = -1, int n_y = -1, int offset = 0)
     {
         List<float> u_taken = u;
@@ -11085,6 +13590,12 @@ public class vis_3D : MonoBehaviour
         float max_val = u_taken.Max();
         return max_val;
     }
+    /// <summary>
+    /// Minimum and maximum of a list.
+    /// </summary>
+    /// <param name="mat">Values.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <returns>Tuple (min, max).</returns>
     public (float, float) find_min_max(List<float> mat, bool only_meaningful = true)
     {
         // info (paul): "only_meaningful" says, that Infinity or NaN values will
@@ -11118,6 +13629,14 @@ public class vis_3D : MonoBehaviour
 
         return (min_val, max_val);
     }
+    /// <summary>
+    /// Minimum and maximum of a matrix.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="only_meaningful">True to ignore NaN and infinite values.</param>
+    /// <param name="with_padding">True to ignore the border.</param>
+    /// <param name="lower_floor">Values below are ignored.</param>
+    /// <returns>Tuple (min, max).</returns>
     public (float, float) find_min_max(List<List<float>> mat, bool only_meaningful = true,
         bool with_padding = false, float lower_floor = -999999999f)
     {
@@ -11159,6 +13678,14 @@ public class vis_3D : MonoBehaviour
         return (min_val, max_val);
     }
 
+    /// <summary>
+    /// Scales a normalised matrix back to the range depth_min..depth_max.
+    /// </summary>
+    /// <param name="mat">Normalised matrix.</param>
+    /// <param name="depth_min">Lower bound.</param>
+    /// <param name="depth_max">Upper bound.</param>
+    /// <param name="mode">Scaling mode.</param>
+    /// <returns>Scaled matrix.</returns>
     public List<List<float>> unnorm_mat(List<List<float>> mat, float depth_min, float depth_max, string mode = "normal")
     {
         // info (paul): kind of the reverse of norming a matrix: We scale it up again to the scale from depth_min to depth_max
@@ -11210,6 +13737,14 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Normalises a matrix to 0..1 (optionally with custom bounds).
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="lower">Custom lower bound (NaN = minimum).</param>
+    /// <param name="upper">Custom upper bound (NaN = maximum).</param>
+    /// <param name="lower_floor">Values below are ignored.</param>
+    /// <returns>Normalised matrix.</returns>
     public List<List<float>> norm_mat(List<List<float>> mat, float lower = float.NaN,
         float upper = float.NaN, float lower_floor = -999999999f)
     {
@@ -11284,6 +13819,11 @@ public class vis_3D : MonoBehaviour
         return mat_new;
     }
 
+    /// <summary>
+    /// Zero matrix with the shape of the input.
+    /// </summary>
+    /// <param name="mat">Reference matrix.</param>
+    /// <returns>Zero matrix.</returns>
     public List<List<float>> mat_like(List<List<float>> mat)
     {
         List<List<float>> floats = new List<List<float>>();
@@ -11300,6 +13840,12 @@ public class vis_3D : MonoBehaviour
         return floats;
     }
 
+    /// <summary>
+    /// Central difference in x of a map.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Derivative.</returns>
     public List<List<float>> derive_x(List<List<float>> mat, List<List<float>> stream_z)
     {
         List<List<float>> mat_new = mat_like(mat);
@@ -11330,6 +13876,12 @@ public class vis_3D : MonoBehaviour
         return mat_new;
     }
 
+    /// <summary>
+    /// Central difference in y of a map.
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Derivative.</returns>
     public List<List<float>> derive_y(List<List<float>> mat, List<List<float>> stream_z)
     {
         List<List<float>> mat_new = mat_like(mat);
@@ -11362,6 +13914,14 @@ public class vis_3D : MonoBehaviour
         return mat_new;
     }
 
+    /// <summary>
+    /// Derivative in y at one pixel (optionally along the surface using the height component).
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Derivative (NaN at invalid pixels).</returns>
     public float find_d_y_val(List<List<float>> mat, int i, int j, List<List<float>> stream_z)
     {
         // info (paul): pure 2D
@@ -11414,6 +13974,10 @@ public class vis_3D : MonoBehaviour
         }
         return val_return;//17032025 log_val
     }
+    /// <summary>
+    /// Checks whether component and derivative direction form a normal strain (u/x or v/y).
+    /// </summary>
+    /// <returns>True for a diagonal component.</returns>
     public bool check_diag()
     {
         bool is_diag = false;
@@ -11439,6 +14003,14 @@ public class vis_3D : MonoBehaviour
     }
 
     bool strain_with_log = false;//true
+    /// <summary>
+    /// Derivative in x at one pixel (optionally along the surface using the height component).
+    /// </summary>
+    /// <param name="mat">Map.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="stream_z">Out-of-plane component.</param>
+    /// <returns>Derivative (NaN at invalid pixels).</returns>
     public float find_d_x_val(List<List<float>> mat, int i, int j, List<List<float>> stream_z)
     {
         // info (paul): pure 2D
@@ -11491,6 +14063,11 @@ public class vis_3D : MonoBehaviour
         return val_return;//17032025 log_val;
     }
 
+    /// <summary>
+    /// Scales the values of a map in place (legacy).
+    /// </summary>
+    /// <param name="floats">Map.</param>
+    /// <returns>The map.</returns>
     public List<List<float>> take_share(List<List<float>> floats)
     {
         int res_x = floats.Count; //25052024 
@@ -11510,6 +14087,11 @@ public class vis_3D : MonoBehaviour
         return floats;
     }
 
+    /// <summary>
+    /// Converts a float matrix to a colour matrix (value in the red channel).
+    /// </summary>
+    /// <param name="floats">Matrix.</param>
+    /// <returns>Colour matrix.</returns>
     public UnityEngine.Color[,] floats2col_mat(List<List<float>> floats)
     {
         int res_x = floats.Count;
@@ -11539,6 +14121,11 @@ public class vis_3D : MonoBehaviour
         return col_mat;
     }
 
+    /// <summary>
+    /// Converts a colour matrix to gray values of an image.
+    /// </summary>
+    /// <param name="cols_mat">Colour matrix.</param>
+    /// <returns>Float matrix.</returns>
     public List<List<float>> cols_mat2floats_mat_for_im(UnityEngine.Color[,] cols_mat)
     {
         List<List<float>> floats = new List<List<float>>();
@@ -11559,6 +14146,11 @@ public class vis_3D : MonoBehaviour
         }
         return floats;
     }
+    /// <summary>
+    /// Converts a colour matrix to a float matrix (red channel).
+    /// </summary>
+    /// <param name="cols_mat">Colour matrix.</param>
+    /// <returns>Float matrix.</returns>
     public List<List<float>> cols_mat2floats_mat(UnityEngine.Color[,] cols_mat)
     {
         List<List<float>> floats = new List<List<float>>();
@@ -11581,6 +14173,13 @@ public class vis_3D : MonoBehaviour
         return floats;
     }
 
+    /// <summary>
+    /// Converts a flat colour array to a colour matrix.
+    /// </summary>
+    /// <param name="cols">Colours.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <returns>Colour matrix.</returns>
     public UnityEngine.Color[,] list2matrix(UnityEngine.Color[] cols, int res_x, int res_y)
     {
         // info (paul): convert array of colors into matrix of colors (we call it list2...,
@@ -11599,6 +14198,13 @@ public class vis_3D : MonoBehaviour
         return col_mat;
     }
 
+    /// <summary>
+    /// Converts a flat list to a matrix.
+    /// </summary>
+    /// <param name="list">Values.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <returns>Matrix.</returns>
     public List<List<float>> list2matrix(List<float> list, int res_x, int res_y)
     {
         // info (paul): convert array of colors into matrix of colors (we call it list2...,
@@ -11618,10 +14224,23 @@ public class vis_3D : MonoBehaviour
         return floats_mat;
     }
 
+    /// <summary>
+    /// Converts a vector to a float array.
+    /// </summary>
+    /// <param name="vec">Vector.</param>
+    /// <returns>Array {x, y, z}.</returns>
     public float[] vec2floats(Vector3 vec)
     {
         return new float[3] { vec.x, vec.y, vec.z };
     }
+    /// <summary>
+    /// Converts a flat array to a jagged matrix.
+    /// </summary>
+    /// <param name="cols">Values.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <param name="with_switch_dims">True to swap the dimensions.</param>
+    /// <returns>Matrix.</returns>
     public float[][] floats2matrix(float[] cols, int res_x, int res_y, bool with_switch_dims = false)
     {
         // info (paul): convert array of colors into matrix of colors (we call it list2...,
@@ -11650,6 +14269,11 @@ public class vis_3D : MonoBehaviour
         return col_mat;
     }
 
+    /// <summary>
+    /// Intended to swap the dimensions of a matrix; currently returns the input unchanged.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>Matrix.</returns>
     public List<List<float>> switch_mat(List<List<float>> mat)
     {
         // info (paul): switch dims; I think, actually thiss currently does not do anything, because returns mat instead of mat_1
@@ -11665,6 +14289,11 @@ public class vis_3D : MonoBehaviour
 
         return mat;
     }
+    /// <summary>
+    /// Flattens a matrix to a list.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <returns>List.</returns>
     public List<float> matrix2list(List<List<float>> mat)
     {
         List<float> list = zeros_of_size(mat.Count * mat[0].Count);
@@ -11680,6 +14309,15 @@ public class vis_3D : MonoBehaviour
         return list;
     }
 
+    /// <summary>
+    /// Flattens a colour matrix to an array (texture order).
+    /// </summary>
+    /// <param name="col_mat">Colour matrix.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <param name="marker">Debugging marker.</param>
+    /// <param name="with_switch_dims">True to swap the dimensions.</param>
+    /// <returns>Colour array.</returns>
     public UnityEngine.Color[] matrix2list(UnityEngine.Color[,] col_mat, int res_x, int res_y,
         string marker = null, bool with_switch_dims = false)
     {
@@ -11727,6 +14365,13 @@ public class vis_3D : MonoBehaviour
         }
         return cols;
     }
+    /// <summary>
+    /// Swaps the dimensions of a jagged matrix.
+    /// </summary>
+    /// <param name="cols">Matrix.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <returns>Transposed matrix.</returns>
     public float[][] switch_dims(float[][] cols, int res_x, int res_y)
     {
         // info (paul): kind of switch cols dims (cols is 1d but represents
@@ -11746,6 +14391,13 @@ public class vis_3D : MonoBehaviour
 
         return cols_new;
     }
+    /// <summary>
+    /// Swaps the dimensions of a flat colour array.
+    /// </summary>
+    /// <param name="cols">Colours.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <returns>Transposed colour array.</returns>
     public UnityEngine.Color[] switch_dims(UnityEngine.Color[] cols, int res_x, int res_y)
     {
         // info (paul): kind of switch cols dims (cols is 1d but represents
@@ -11764,6 +14416,14 @@ public class vis_3D : MonoBehaviour
         return cols_new;
     }
 
+    /// <summary>
+    /// Older version of matrix2list (unused).
+    /// </summary>
+    /// <param name="col_mat">Colour matrix.</param>
+    /// <param name="res_x">Width.</param>
+    /// <param name="res_y">Height.</param>
+    /// <param name="marker">Debugging marker.</param>
+    /// <returns>Colour array.</returns>
     public UnityEngine.Color[] matrix2list_copy(UnityEngine.Color[,] col_mat, int res_x, int res_y, string marker = null)
     {
         // info (paul): convert array of colors into matrix of colors (we call it list2...,
@@ -11845,6 +14505,11 @@ public class vis_3D : MonoBehaviour
         return cols;
     }
 
+    /// <summary>
+    /// Sets the resolution from a height map and returns it.
+    /// </summary>
+    /// <param name="heights">Height map.</param>
+    /// <returns>The height map.</returns>
     public List<List<float>> force_heights(List<List<float>> heights)
     {
         // info (paul): I assume, that res_x and res_y are just the dimensions of the heights array, right?
@@ -11864,6 +14529,13 @@ public class vis_3D : MonoBehaviour
         return heights;
     }
 
+    /// <summary>
+    /// Creates a surface mesh from a height map (or a flat grid).
+    /// </summary>
+    /// <param name="heights">Height map.</param>
+    /// <param name="force_flat">True for a flat grid.</param>
+    /// <param name="scale_factor">Height scale (-1 = automatic).</param>
+    /// <returns>Tuple (mesh, grid points).</returns>
     public (Mesh, List<List<float>>) make_mesh(List<List<float>> heights, bool force_flat = false, float scale_factor = -1f)
     {
         Mesh mesh = new Mesh();
@@ -11919,6 +14591,13 @@ public class vis_3D : MonoBehaviour
         return (mesh, heights);
     }
 
+    /// <summary>
+    /// Texture coordinates of the grid vertices.
+    /// </summary>
+    /// <param name="mesh">Mesh.</param>
+    /// <param name="len_x">Number of cells in x.</param>
+    /// <param name="len_y">Number of cells in y.</param>
+    /// <returns>UV array.</returns>
     public UnityEngine.Vector2[] init_uvs(Mesh mesh, int len_x, int len_y)
     {
         UnityEngine.Vector2[] uvs = new UnityEngine.Vector2[mesh.vertices.Length];
@@ -11938,6 +14617,13 @@ public class vis_3D : MonoBehaviour
         return uvs;
     }
 
+    /// <summary>
+    /// Triangle indices of the grid (two triangles per cell).
+    /// </summary>
+    /// <param name="verts">Vertices.</param>
+    /// <param name="len_x">Number of cells in x.</param>
+    /// <param name="len_y">Number of cells in y.</param>
+    /// <returns>Index array.</returns>
     public int[] init_tris(UnityEngine.Vector3[] verts, int len_x, int len_y)
     {
         List<int> tris = new List<int>();
@@ -11972,6 +14658,15 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Vertices of the grid with the heights of the map.
+    /// </summary>
+    /// <param name="mat">Height map.</param>
+    /// <param name="len_x">Number of cells in x.</param>
+    /// <param name="len_y">Number of cells in y.</param>
+    /// <param name="force_flat">True for a flat grid.</param>
+    /// <param name="scale_factor">Height scale.</param>
+    /// <returns>Vertex array.</returns>
     public UnityEngine.Vector3[] init_verts(List<List<float>> mat, int len_x = 10, int len_y = 10,
         bool force_flat = false, float scale_factor = 1f)
     {
@@ -12068,6 +14763,11 @@ public class vis_3D : MonoBehaviour
     }
     int i_test_1 = -1;
     int j_test_1 = -1;
+    /// <summary>
+    /// Minimum and maximum of a matrix.
+    /// </summary>
+    /// <param name="matrix">Matrix.</param>
+    /// <returns>Tuple (max, min).</returns>
     public (float, float) find_max_2d(List<List<float>> matrix)
     {
         float max_val = -9999999f;
@@ -12107,6 +14807,11 @@ public class vis_3D : MonoBehaviour
         }
         return (min_val, max_val);
     }
+    /// <summary>
+    /// Flattens a 2D vector array.
+    /// </summary>
+    /// <param name="vecs_2d">Vector array.</param>
+    /// <returns>Flat array.</returns>
     public UnityEngine.Vector3[] flatten_vec_2d(UnityEngine.Vector3[,] vecs_2d)
     {
         int l_x = vecs_2d.GetLength(0);
@@ -12127,6 +14832,14 @@ public class vis_3D : MonoBehaviour
         return flat;
     }
 
+    /// <summary>
+    /// Creates a sphere as a marker.
+    /// </summary>
+    /// <param name="x">x position.</param>
+    /// <param name="y">y position.</param>
+    /// <param name="z">z position.</param>
+    /// <param name="size">Diameter.</param>
+    /// <returns>Sphere object.</returns>
     public GameObject make_sphere_at(float x, float y, float z, float size = 1f)
     {
         //(GameObject sphere_local, _) = but1.build_object(new Vector3(x, y, z), 
@@ -12140,6 +14853,9 @@ public class vis_3D : MonoBehaviour
         return sphere_local;
     }
 
+    /// <summary>
+    /// Legacy entry point of the rendering of the Nakajima samples (empty).
+    /// </summary>
     public void main_render()
     {
         // info (paul): Kind of the main function for the rendering of the nakajima samples
@@ -12147,6 +14863,9 @@ public class vis_3D : MonoBehaviour
 
         ; ;
     }
+    /// <summary>
+    /// Recreates the stereo cameras above the sample.
+    /// </summary>
     public void refresh_cams()
     {
         GameObject cam_parent = GameObject.Find("cams_0_1_parent");
@@ -12176,6 +14895,9 @@ public class vis_3D : MonoBehaviour
         this.cam_1 = set_up_cam("cam_1", "cam_prefab_1_" + get_render_res().ToString(), pos, angle: cam_angle_1);//10f
     }
 
+    /// <summary>
+    /// Sets up the two cameras (tilt 10 degrees) and the lighting.
+    /// </summary>
     public void load_cam_light()
     {
         Vector3 pos = new Vector3(blades_pos.x, blades_pos.y + default_dist, blades_pos.z + 0f);
@@ -12195,6 +14917,10 @@ public class vis_3D : MonoBehaviour
         // info (paul): set up blade object
         //10062024 GameObject blade_90 = load_blade(cam);
     }
+    /// <summary>
+    /// Destroys all children of an object.
+    /// </summary>
+    /// <param name="game_obj">Parent object.</param>
     public void remove_children(GameObject game_obj)
     {
         int child_cnt = game_obj.transform.childCount;
@@ -12213,6 +14939,11 @@ public class vis_3D : MonoBehaviour
     float exp_light_base = float.NaN;
     public bool use_exp_setup_lights = true;
 
+    /// <summary>
+    /// Uses the lamps of the lab model (if present) and scales their intensity.
+    /// </summary>
+    /// <param name="intensity">Illumination factor.</param>
+    /// <returns>True if lab lamps were found.</returns>
     bool set_up_exp_setup_lights(float intensity)
     {
         Light[] all = FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -12254,6 +14985,10 @@ public class vis_3D : MonoBehaviour
     //  wird alles gemeinsam dunkler, ab 1 bleibt das Umgebungslicht wie im Original (fruehere Werte >= 1 gelten weiter).
     Volume ambient_volume;
     IndirectLightingController ambient_ctrl;
+    /// <summary>
+    /// Sets the ambient light via a global HDRP volume (created if missing).
+    /// </summary>
+    /// <param name="f">Ambient factor.</param>
     void set_ambient_factor(float f)
     {
         if (ambient_volume == null)
@@ -12271,6 +15006,11 @@ public class vis_3D : MonoBehaviour
         ambient_ctrl.reflectionProbeIntensityMultiplier.Override(f);
     }
 
+    /// <summary>
+    /// Creates the lighting of the scene (lab lamps or own lights).
+    /// </summary>
+    /// <param name="y_coord">Height of the lights.</param>
+    /// <param name="intensity">Illumination factor.</param>
     public void set_up_lighting(float y_coord = 30f, float intensity = 1f)
     {
         // info (paul): remove lights
@@ -12321,6 +15061,15 @@ public class vis_3D : MonoBehaviour
         ;
     }
     //public void ;;
+    /// <summary>
+    /// Creates a camera from a prefab at a position and tilt (with a runtime render target for free resolutions).
+    /// </summary>
+    /// <param name="cam_name">Object name.</param>
+    /// <param name="prefab_name">Name of the camera prefab.</param>
+    /// <param name="pos">Position.</param>
+    /// <param name="angle">Tilt angle in degrees.</param>
+    /// <param name="config">Experiment configuration (optional).</param>
+    /// <returns>The camera.</returns>
     public Camera set_up_cam(string cam_name, string prefab_name, Vector3 pos, float angle = 0f, ExpConfig config=null)
     {
         GameObject cam_prefab = (GameObject)Resources.Load("Targets/fbx_files/" + prefab_name);
@@ -12442,6 +15191,11 @@ public class vis_3D : MonoBehaviour
     //23092026 RenderTexture der aktuellen Aufloesung fuer eine Kamera, kopiert Format/Tiefe der
     //  Prefab-Vorlage. Die vorherige Laufzeit-Textur derselben Kamera wird freigegeben.
     private readonly Dictionary<string, RenderTexture> runtime_cam_targets = new Dictionary<string, RenderTexture>();
+    /// <summary>
+    /// Assigns a render texture of the chosen resolution (same format as the prefab template).
+    /// </summary>
+    /// <param name="cam">Camera.</param>
+    /// <param name="cam_name">Camera name (for messages).</param>
     void assign_runtime_target(Camera cam, string cam_name)
     {
         RenderTexture template = cam.targetTexture;
@@ -12472,6 +15226,10 @@ public class vis_3D : MonoBehaviour
         Debug.Log("Kamera " + cam_name + ": Laufzeit-RenderTexture " + res + "x" + res);
     }
 
+    /// <summary>
+    /// Shows a camera symbol at the camera position.
+    /// </summary>
+    /// <param name="cam">Camera.</param>
     public void add_cam_symbol(Camera cam)
     {
         GameObject game_obj_prefab = Resources.Load("cam_symbol") as GameObject;
@@ -12517,6 +15275,10 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Shows only the sample of a time step.
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
     public void activate_blade(int blade_idx)
     {
         List<GameObject> blades = collect_blades();
@@ -12527,6 +15289,11 @@ public class vis_3D : MonoBehaviour
         //11062024 }
     }
 
+    /// <summary>
+    /// Shows only one sample of a list.
+    /// </summary>
+    /// <param name="blades">Samples.</param>
+    /// <param name="blade_idx">Index of the shown sample.</param>
     public void activate_blade_from(List<GameObject> blades, int blade_idx)
     {
         // info (paul): deactivate all blades
@@ -12553,11 +15320,19 @@ public class vis_3D : MonoBehaviour
         //}
     }
 
+    /// <summary>
+    /// Takes an image manually (camera settings from the design panels).
+    /// </summary>
+    /// <param name="save_path">Output path.</param>
+    /// <param name="cam_idx">Camera index.</param>
     public void take_pic_manual(string save_path, int cam_idx = 0)
     {
         // info (paul): this is for taking pictures, when the user enters cam pos etc. over the design panels
         take_pic(blade_idx: -1, cam_idx: cam_idx, save_path: save_path, pars: params_now);
     }
+    /// <summary>
+    /// Takes the image of the current render action and time step.
+    /// </summary>
     public void take_pic_act()
     {
         int blade_idx = get_blade_idx();
@@ -12571,6 +15346,13 @@ public class vis_3D : MonoBehaviour
         cam_idx_for_pic = cam_idx_for_pic % 2;
     }
 
+    /// <summary>
+    /// Renders an image of a camera, applies post-processing and noise, and saves it.
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="pars">Parameters of the experiment.</param>
+    /// <param name="save_path">Output path (optional).</param>
     void take_pic(int blade_idx, int cam_idx, Params pars, string save_path = null)
     {
         Texture2D tex = cam2tex(cam_idx);
@@ -12579,6 +15361,12 @@ public class vis_3D : MonoBehaviour
         save_png(tex_post, cam_idx, save_path: save_path, blade_idx: blade_idx, pars: pars);
     }
 
+    /// <summary>
+    /// Post-processing of a rendered image (gray values, noise).
+    /// </summary>
+    /// <param name="tex">Rendered image.</param>
+    /// <param name="pars">Parameters of the experiment.</param>
+    /// <returns>Processed image.</returns>
     public Texture2D post_proc(Texture2D tex, Params pars)
     {
         //Texture2D tex_1 = new Texture2D(tex.width, tex.height);
@@ -12594,6 +15382,11 @@ public class vis_3D : MonoBehaviour
         return tex_2;
     }
 
+    /// <summary>
+    /// Placeholder for lens distortion (currently identity).
+    /// </summary>
+    /// <param name="unverzerrt">Undistorted image.</param>
+    /// <returns>The input.</returns>
     public List<List<float>> lins_verzerr(List<List<float>> unverzerrt)
     {
         List<List<float>> verzerr = unverzerrt;// TODO: add the actual calculation
@@ -12602,6 +15395,9 @@ public class vis_3D : MonoBehaviour
 
     Stopwatch watch = null;
 
+    /// <summary>
+    /// Starts the stopwatch.
+    /// </summary>
     public void tik()
     {
         // info (paul): Start stopwatch
@@ -12609,6 +15405,10 @@ public class vis_3D : MonoBehaviour
         this.watch.Start();
     }
 
+    /// <summary>
+    /// Stops the stopwatch.
+    /// </summary>
+    /// <returns>Elapsed ticks.</returns>
     public long tok()
     {
         // info (paul): read out stop watch and restart it
@@ -12617,6 +15417,9 @@ public class vis_3D : MonoBehaviour
         return ticks;
     }
 
+    /// <summary>
+    /// Takes the reference image (triangle assignment) of the current time step.
+    /// </summary>
     public void take_ref_pic_act()//(int blade_idx, int cam_idx)
     {
         // info (paul): get params
@@ -12663,6 +15466,12 @@ public class vis_3D : MonoBehaviour
 
         // info (paul): deactivate mesh collider
     }
+    /// <summary>
+    /// Computes the reference out-of-plane displacement map of a time step.
+    /// </summary>
+    /// <param name="blade">Sample.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Map.</returns>
     public List<List<float>> manage_heights_flow(GameObject blade, int blade_idx)
     {
         // info (paul): init blade tris, will be needed
@@ -12681,6 +15490,16 @@ public class vis_3D : MonoBehaviour
         //d_xs[tris[0,0]] = 
         return heights_flow;
     }
+    /// <summary>
+    /// Per-pixel out-of-plane reference displacement by barycentric interpolation.
+    /// </summary>
+    /// <param name="d_xs">x displacement per vertex.</param>
+    /// <param name="d_ys">y displacement per vertex.</param>
+    /// <param name="d_zs">z displacement per vertex.</param>
+    /// <param name="tris">Triangle index per pixel.</param>
+    /// <param name="barys">Barycentric coordinates per pixel.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Map.</returns>
     public List<List<float>> construct_heights_flow(float[] d_xs, float[] d_ys,
         float[] d_zs, int[,] tris, float[][][] barys, int blade_idx)
     {
@@ -12707,6 +15526,18 @@ public class vis_3D : MonoBehaviour
 
         return heights_flow;
     }
+    /// <summary>
+    /// Barycentric reference displacement of one pixel.
+    /// </summary>
+    /// <param name="bary">Barycentric coordinates.</param>
+    /// <param name="d_xs">x displacement per vertex.</param>
+    /// <param name="d_ys">y displacement per vertex.</param>
+    /// <param name="d_zs">z displacement per vertex.</param>
+    /// <param name="i">Column.</param>
+    /// <param name="j">Row.</param>
+    /// <param name="tri_idx">Triangle index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Tuple (dx, dy, dz).</returns>
     public (float, float, float) func_11(float[] bary, float[] d_xs, float[] d_ys, float[] d_zs,
         int i, int j, int tri_idx, int blade_idx)
     {
@@ -12718,6 +15549,11 @@ public class vis_3D : MonoBehaviour
         float d_z_ref = bary[0] * d_zs[node_idx_0] + bary[1] * d_zs[node_idx_1] + bary[2] * d_zs[node_idx_2];
         return (d_x_ref, d_y_ref, d_z_ref);
     }
+    /// <summary>
+    /// Computes and saves the pixel-to-triangle assignment of a time step (mesh collider and ray casts).
+    /// </summary>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="cam_idx">Camera index.</param>
     public void take_ref_pic(int blade_idx, int cam_idx)
     {
         // info (paul): assign and activate mesh collider
@@ -12747,11 +15583,27 @@ public class vis_3D : MonoBehaviour
         // info (paul): deactivate mesh collider
 
     }
+    /// <summary>
+    /// Saves a value for a time step.
+    /// </summary>
+    /// <param name="value">Value.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_float_for_blade(float value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "float", with_uv_mode: with_uv_mode);
         save_float(value, full_path: path);
     }
+    /// <summary>
+    /// Loads a float array of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Array.</returns>
     public float[] load_floats_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "floats", with_uv_mode: with_uv_mode);
@@ -12759,12 +15611,28 @@ public class vis_3D : MonoBehaviour
         float[] value = load_floats(full_path: path);
         return value;
     }
+    /// <summary>
+    /// Loads an integer array of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Array.</returns>
     public int[] load_ints_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "ints", with_uv_mode: with_uv_mode);
         int[] value = load_ints(full_path: path);
         return value;
     }
+    /// <summary>
+    /// Loads a 2D integer array of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Array or null.</returns>
     public int[,] load_ints2_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "ints2", with_uv_mode: with_uv_mode);
@@ -12775,6 +15643,14 @@ public class vis_3D : MonoBehaviour
         }
         return value;
     }
+    /// <summary>
+    /// Loads a 3D float array of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Array or null.</returns>
     public float[][][] load_floats3_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "floats3", with_uv_mode: with_uv_mode);
@@ -12786,6 +15662,11 @@ public class vis_3D : MonoBehaviour
         return value;
     }
 
+    /// <summary>
+    /// Converts a nested list to a jagged array.
+    /// </summary>
+    /// <param name="lists">Nested list.</param>
+    /// <returns>Jagged array.</returns>
     public float[][] lists_to_floats2(List<List<float>> lists)
     {
         float[][] floats = new float[lists.Count][];
@@ -12796,6 +15677,11 @@ public class vis_3D : MonoBehaviour
 
         return floats;
     }
+    /// <summary>
+    /// Converts a jagged array to a nested list.
+    /// </summary>
+    /// <param name="lists">Jagged array.</param>
+    /// <returns>Nested list.</returns>
     public List<List<float>> floats2_to_lists(float[][] lists)
     {
         List<List<float>> floats = new List<List<float>>();
@@ -12823,6 +15709,13 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Shows an image (file or texture) in a panel.
+    /// </summary>
+    /// <param name="im_1_panel">Panel.</param>
+    /// <param name="save_path">Image file (optional).</param>
+    /// <param name="input">Texture (optional).</param>
+    /// <returns>The panel.</returns>
     public Transform display_from_path(Transform im_1_panel, string save_path = null, Texture2D input = null)
     {
         // info (paul): assign to images to panels
@@ -12850,43 +15743,107 @@ public class vis_3D : MonoBehaviour
         return im_1_panel;
     }
 
+    /// <summary>
+    /// Saves a float array of a time step.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_floats_for_blade(float[] value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "floats", with_uv_mode: with_uv_mode);
         save_floats(value, full_path: path);
     }
+    /// <summary>
+    /// Saves a nested float list of a time step.
+    /// </summary>
+    /// <param name="lists">Nested list.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_floats_list_2_for_blade(List<List<float>> lists, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         float[][] value = lists_to_floats2(lists);
         save_floats2_for_blade(value, cam_idx, blade_idx, label, with_uv_mode);
     }
+    /// <summary>
+    /// Saves a jagged float array of a time step.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_floats2_for_blade(float[][] value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "floats2", with_uv_mode: with_uv_mode);
         save_floats2(value, full_path: path);
     }
+    /// <summary>
+    /// Saves an integer array of a time step.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_ints_for_blade(int[] value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "ints", with_uv_mode: with_uv_mode);
         save_ints(value, full_path: path);
     }
+    /// <summary>
+    /// Saves a 2D integer array of a time step.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_ints2_for_blade(int[,] value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "ints2", with_uv_mode: with_uv_mode);
         save_ints2(value, full_path: path);
     }
+    /// <summary>
+    /// Saves a 3D float array of a time step.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
     public void save_floats3_for_blade(float[][][] value, int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "floats3", with_uv_mode: with_uv_mode);
         save_floats3(value, full_path: path);
     }
 
+    /// <summary>
+    /// Loads a value of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Value.</returns>
     public float load_float_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         string path = construct_blade_path(cam_idx, blade_idx, label, type: "float", with_uv_mode: with_uv_mode);
         float value = load_float(full_path: path);
         return value;
     }
+    /// <summary>
+    /// Loads a nested float list of a time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="with_uv_mode">True to add the u/v mode to the path.</param>
+    /// <returns>Nested list.</returns>
     public List<List<float>> load_floats_list_2_for_blade(int cam_idx, int blade_idx, string label = "", bool with_uv_mode = false)
     {
         //float[][] value = lists2floats2(lists);
@@ -12898,6 +15855,12 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Saves a value (binary serialisation).
+    /// </summary>
+    /// <param name="value">Value.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_float(float value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -12919,6 +15882,12 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Saves a float array.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_floats(float[] value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -12939,6 +15908,12 @@ public class vis_3D : MonoBehaviour
             stream.Close();
         }
     }
+    /// <summary>
+    /// Saves a jagged float array.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_floats2(float[][] value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -12960,6 +15935,12 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Saves an integer array.
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_ints(int[] value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -12980,6 +15961,12 @@ public class vis_3D : MonoBehaviour
             stream.Close();
         }
     }
+    /// <summary>
+    /// Saves a 2D integer array (and a fast binary copy).
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_ints2(int[,] value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -12996,6 +15983,12 @@ public class vis_3D : MonoBehaviour
         //  bisher: BinaryFormatter formatter = new BinaryFormatter(); formatter.Serialize(new FileStream(path, FileMode.Create), value);
         write_fast_ints2(path, value);
     }
+    /// <summary>
+    /// Saves a 3D float array (and a fast binary copy).
+    /// </summary>
+    /// <param name="value">Array.</param>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
     public void save_floats3(float[][][] value, string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13019,6 +16012,12 @@ public class vis_3D : MonoBehaviour
     const int FAST_MAGIC_I2 = 0x49324631; // "1F2I"
     const int FAST_MAGIC_F3 = 0x46334631; // "1F3F"
 
+    /// <summary>
+    /// Checks whether the fast binary copy exists and is not older than the original.
+    /// </summary>
+    /// <param name="original">Original file.</param>
+    /// <param name="copy">Binary copy.</param>
+    /// <returns>True if the copy can be used.</returns>
     static bool fast_copy_valid(string original, string copy)
     {
         // gueltig, wenn vorhanden und nicht aelter als eine evtl. noch vorhandene alte Datei
@@ -13026,6 +16025,11 @@ public class vis_3D : MonoBehaviour
             && (!File.Exists(original) || File.GetLastWriteTimeUtc(copy) >= File.GetLastWriteTimeUtc(original));
     }
 
+    /// <summary>
+    /// Writes a 2D integer array as a fast binary copy (.ibin).
+    /// </summary>
+    /// <param name="path">Path of the original file.</param>
+    /// <param name="data">Array.</param>
     static void write_fast_ints2(string path, int[,] data)
     {
         if (data == null) return;
@@ -13043,6 +16047,11 @@ public class vis_3D : MonoBehaviour
         catch (Exception e) { Debug.LogWarning("Schnellkopie nicht geschrieben: " + path + ".ibin (" + e.Message + ")"); }
     }
 
+    /// <summary>
+    /// Reads the fast binary copy of a 2D integer array.
+    /// </summary>
+    /// <param name="path">Path of the original file.</param>
+    /// <returns>Array, or null.</returns>
     static int[,] read_fast_ints2(string path)
     {
         string copy = path + ".ibin";
@@ -13060,6 +16069,11 @@ public class vis_3D : MonoBehaviour
         catch (Exception) { return null; }
     }
 
+    /// <summary>
+    /// Writes a 3D float array as a fast binary copy (.fbin).
+    /// </summary>
+    /// <param name="path">Path of the original file.</param>
+    /// <param name="data">Array.</param>
     static void write_fast_floats3(string path, float[][][] data)
     {
         if (data == null) return;
@@ -13085,6 +16099,11 @@ public class vis_3D : MonoBehaviour
         catch (Exception e) { Debug.LogWarning("Schnellkopie nicht geschrieben: " + path + ".fbin (" + e.Message + ")"); }
     }
 
+    /// <summary>
+    /// Reads the fast binary copy of a 3D float array.
+    /// </summary>
+    /// <param name="path">Path of the original file.</param>
+    /// <returns>Array, or null.</returns>
     static float[][][] read_fast_floats3(string path)
     {
         string copy = path + ".fbin";
@@ -13117,6 +16136,12 @@ public class vis_3D : MonoBehaviour
         catch (Exception) { return null; }
     }
 
+    /// <summary>
+    /// Loads a value.
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Value.</returns>
     public float load_float(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13145,6 +16170,12 @@ public class vis_3D : MonoBehaviour
 
         return data;
     }
+    /// <summary>
+    /// Loads a jagged float array.
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Array or null.</returns>
     public float[][] load_floats2(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13174,6 +16205,11 @@ public class vis_3D : MonoBehaviour
         return data;
     }
 
+    /// <summary>
+    /// Reads the first line of a text file.
+    /// </summary>
+    /// <param name="file_name">File.</param>
+    /// <returns>Line, or null.</returns>
     public string load_txt_line(string file_name)
     {
         //File file = null;
@@ -13196,6 +16232,12 @@ public class vis_3D : MonoBehaviour
     //  Analyse ueberschreibt die Dateien und wird damit automatisch neu geladen.
     private static readonly Dictionary<string, (DateTime mtime, long len, object data)> file_cache =
         new Dictionary<string, (DateTime, long, object)>();
+    /// <summary>
+    /// Returns cached file content if the file is unchanged (time and size).
+    /// </summary>
+    /// <param name="path">File.</param>
+    /// <param name="data">Cached content.</param>
+    /// <returns>True if found.</returns>
     static bool try_get_cached(string path, out object data)
     {
         data = null;
@@ -13207,6 +16249,11 @@ public class vis_3D : MonoBehaviour
         }
         return false;
     }
+    /// <summary>
+    /// Caches loaded file content (limited to 16 entries).
+    /// </summary>
+    /// <param name="path">File.</param>
+    /// <param name="data">Content.</param>
     static void put_cached(string path, object data)
     {
         FileInfo fi = new FileInfo(path);
@@ -13215,6 +16262,12 @@ public class vis_3D : MonoBehaviour
         file_cache[path] = (fi.LastWriteTimeUtc, fi.Length, data);
     }
 
+    /// <summary>
+    /// Loads a float array.
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Array or null.</returns>
     public float[] load_floats(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13243,6 +16296,12 @@ public class vis_3D : MonoBehaviour
 
         return data;
     }
+    /// <summary>
+    /// Loads an integer array.
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Array or null.</returns>
     public int[] load_ints(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13271,6 +16330,12 @@ public class vis_3D : MonoBehaviour
 
         return data;
     }
+    /// <summary>
+    /// Loads a 2D integer array (fast copy or cache if possible).
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Array or null.</returns>
     public int[,] load_ints2(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13314,6 +16379,12 @@ public class vis_3D : MonoBehaviour
 
         return data;
     }
+    /// <summary>
+    /// Loads a 3D float array (fast copy or cache if possible).
+    /// </summary>
+    /// <param name="file_name">File name under persistentDataPath.</param>
+    /// <param name="full_path">Full path (alternative).</param>
+    /// <returns>Array or null.</returns>
     public float[][][] load_floats3(string file_name = null, string full_path = null)
     {
         string path = null;
@@ -13356,6 +16427,11 @@ public class vis_3D : MonoBehaviour
 
         return data;
     }
+    /// <summary>
+    /// Legacy: distance of every pixel to the camera by ray casting.
+    /// </summary>
+    /// <param name="curb">Maximum number of operations (debugging).</param>
+    /// <returns>Distance map.</returns>
     public List<List<float>> find_dists(int curb = 99999999)
     {
         // info (paul): curb is to curb the number of operations, in case 
@@ -13389,6 +16465,11 @@ public class vis_3D : MonoBehaviour
         return dists;
     }
 
+    /// <summary>
+    /// Renders the image of a camera into a texture.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <returns>Texture.</returns>
     public Texture2D cam2tex(int cam_idx)
     {
         int our_height = this.get_render_res();//11062024 256
@@ -13412,6 +16493,18 @@ public class vis_3D : MonoBehaviour
         return tex;
     }
 
+    /// <summary>
+    /// Renders the comparison image for the real image (same gray-value pipeline as the experiments, own field of view and aspect, optionally with the projected experiment texture or camera 1).
+    /// </summary>
+    /// <param name="comparisonFov">Field of view in degrees.</param>
+    /// <param name="comparisonAspect">Aspect ratio.</param>
+    /// <param name="projectedExperimentalTexture">Projected experiment texture (optional).</param>
+    /// <param name="textureScaleX">Texture scale x.</param>
+    /// <param name="textureScaleY">Texture scale y.</param>
+    /// <param name="textureOffsetX">Texture offset x.</param>
+    /// <param name="textureOffsetY">Texture offset y.</param>
+    /// <param name="useCam1">True for camera 1.</param>
+    /// <returns>Image.</returns>
     public Texture2D capture_nakajima_comparison_image(float comparisonFov = 55f,
         float comparisonAspect = 1f, Texture2D projectedExperimentalTexture = null,
         float textureScaleX = 1f, float textureScaleY = 1f,
@@ -13651,10 +16744,18 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns the name of the current experiment.
+    /// </summary>
+    /// <returns>Experiment name.</returns>
     public string get_experiment()
     {
         return this.experiment;
     }
+    /// <summary>
+    /// Sets the name of the current experiment.
+    /// </summary>
+    /// <param name="input">Experiment name.</param>
     public void set_experiment(string input)
     {
         if (input == null)
@@ -13669,6 +16770,16 @@ public class vis_3D : MonoBehaviour
         this.experiment = input;
     }
 
+    /// <summary>
+    /// Builds the file path of a data item of an experiment, camera, and time step.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="type">Data type or extension.</param>
+    /// <param name="experiment">Experiment (null = current).</param>
+    /// <param name="with_uv_mode">True to add the u/v mode.</param>
+    /// <returns>Path.</returns>
     public string construct_blade_path(int cam_idx, int blade_idx, string label,
         string type = ".png", string experiment = null, bool with_uv_mode = false)
     {
@@ -13703,6 +16814,11 @@ public class vis_3D : MonoBehaviour
 
         return path;
     }
+    /// <summary>
+    /// Saves a texture as PNG (default: screenshot path).
+    /// </summary>
+    /// <param name="tex">Texture.</param>
+    /// <param name="path">Output path.</param>
     public void save_tex(Texture2D tex, string path = null)
     {
         if (path == null)
@@ -13770,6 +16886,16 @@ public class vis_3D : MonoBehaviour
     //(min/max) stehen im Dateinamen, den die Galerie als Titel anzeigt.
     //23092026 optional scale_min/scale_max: gemeinsame Farbskala (z.B. Flow und Flow ref im
     //  Genauigkeits-Panel); v_min/v_max bleiben die Werte zum Dekodieren dieser Datei.
+    /// <summary>
+    /// Colours an encoded map (loss: black to red, otherwise diverging) and adds a colour bar with labels.
+    /// </summary>
+    /// <param name="encoded">Encoded map.</param>
+    /// <param name="mode">Display mode.</param>
+    /// <param name="v_min">Minimum for decoding.</param>
+    /// <param name="v_max">Maximum for decoding.</param>
+    /// <param name="scale_min">Common colour scale minimum (optional).</param>
+    /// <param name="scale_max">Common colour scale maximum (optional).</param>
+    /// <returns>Coloured image.</returns>
     public Texture2D colorize_encoded_map(Texture2D encoded, string mode, float v_min, float v_max,
         float scale_min = float.NaN, float scale_max = float.NaN)
     {
@@ -13862,6 +16988,12 @@ public class vis_3D : MonoBehaviour
     }
 
     //23092026 Zahl fuer die Farbbalken-Beschriftung (loss_rel in Prozent)
+    /// <summary>
+    /// Formats a value of the colour bar label.
+    /// </summary>
+    /// <param name="v">Value.</param>
+    /// <param name="as_percent">True for percent.</param>
+    /// <returns>Text.</returns>
     static string format_scale_value(float v, bool as_percent)
     {
         CultureInfo ci = CultureInfo.InvariantCulture;
@@ -13880,6 +17012,11 @@ public class vis_3D : MonoBehaviour
     }
 
     //27092026 Nachkommastellen, damit kleine Werte zwei gueltige Ziffern behalten (max. 6)
+    /// <summary>
+    /// Number of decimals so that small values keep two significant digits (max. 6).
+    /// </summary>
+    /// <param name="v">Value.</param>
+    /// <returns>Decimals.</returns>
     static int small_value_decimals(float v)
     {
         float a = Mathf.Abs(v);
@@ -13906,6 +17043,16 @@ public class vis_3D : MonoBehaviour
     };
 
     // Schreibt text weiss in dst (Breite tex_w, Hoehe tex_h, y = 0 unten); y_top = oberste Pixelzeile
+    /// <summary>
+    /// Writes text in white into a pixel array (bitmap font).
+    /// </summary>
+    /// <param name="dst">Pixel array.</param>
+    /// <param name="tex_w">Width.</param>
+    /// <param name="tex_h">Height.</param>
+    /// <param name="x0">Start column.</param>
+    /// <param name="y_top">Top row.</param>
+    /// <param name="text">Text.</param>
+    /// <param name="s">Pixel scale.</param>
     static void draw_label(Color[] dst, int tex_w, int tex_h, int x0, int y_top, string text, int s)
     {
         int x = x0;
@@ -13940,6 +17087,15 @@ public class vis_3D : MonoBehaviour
         private bool negative;    // schwarz -> blau (alle Werte <= 0)
 
         //27092026 sequential: schwarz -> rot linear ueber [v_min, v_max] (log-Fehlerkarten, Werte meist < 0)
+        /// <summary>
+        /// Colour scale for maps (loss, diverging, negative, or sequential).
+        /// </summary>
+        /// <param name="is_loss">True for error maps.</param>
+        /// <param name="plus_minus">True for signed maps.</param>
+        /// <param name="v_min">Minimum.</param>
+        /// <param name="v_max">Maximum.</param>
+        /// <param name="lim">Symmetric limit.</param>
+        /// <param name="sequential">True for black to red over [v_min, v_max].</param>
         public ColorScale(bool is_loss, bool plus_minus, float v_min, float v_max, float lim, bool sequential = false)
         {
             diverging = !is_loss && plus_minus && !sequential;
@@ -13951,6 +17107,11 @@ public class vis_3D : MonoBehaviour
             if (hi - lo < 1e-9f) hi = lo + 1e-9f;
         }
 
+        /// <summary>
+        /// Colour of a value.
+        /// </summary>
+        /// <param name="value">Value.</param>
+        /// <returns>Colour (black for NaN).</returns>
         public Color map(float value)
         {
             if (float.IsNaN(value))
@@ -13966,6 +17127,14 @@ public class vis_3D : MonoBehaviour
             return new Color(t, 0f, 0f, 1f);
         }
     }
+    /// <summary>
+    /// Output path of an image (DIC package folder or labelled file).
+    /// </summary>
+    /// <param name="label">Label.</param>
+    /// <param name="tex">Image.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Path.</returns>
     public string manage_png_path(string label, Texture2D tex, int cam_idx, int blade_idx)
     {
         // info (paul): save in the DIC-package directory
@@ -13984,6 +17153,15 @@ public class vis_3D : MonoBehaviour
         string path_l = construct_blade_path(cam_idx, blade_idx, label, with_uv_mode: true);
         return path_l;
     }
+    /// <summary>
+    /// Saves a rendered image as PNG and writes the parameter file.
+    /// </summary>
+    /// <param name="tex">Image.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="save_path">Output path (optional).</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="pars">Parameters of the experiment.</param>
     public void save_png(Texture2D tex, int cam_idx, string save_path=null, 
         int blade_idx=-1, string label = "", Params pars = null)
     {
@@ -14012,6 +17190,11 @@ public class vis_3D : MonoBehaviour
         set_ready_for_next_blade(true);
     }
 
+    /// <summary>
+    /// Writes the parameters of the experiment next to the image.
+    /// </summary>
+    /// <param name="blade_path">Image path.</param>
+    /// <param name="pars">Parameters (null = nothing).</param>
     public void save_params_file(string blade_path, Params pars)
     {
         //20092026 ohne Parameter (manueller save-Klick) nichts schreiben statt NullReference.
@@ -14062,6 +17245,12 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Compares two parameter sets.
+    /// </summary>
+    /// <param name="pars1">First set.</param>
+    /// <param name="pars2">Second set.</param>
+    /// <returns>True if equal.</returns>
     public bool compare_params(Params pars1, Params pars2)
     {
         bool same_1 = false;
@@ -14087,6 +17276,11 @@ public class vis_3D : MonoBehaviour
         return all_same;
 
     }
+    /// <summary>
+    /// Finds the folder of a render action with matching parameters.
+    /// </summary>
+    /// <param name="pars_ref">Parameters.</param>
+    /// <returns>Tuple (folder, parameters found).</returns>
     public (string, Params) find_dir_for_params(Params pars_ref)
     {
         Params pars_found = null;
@@ -14114,6 +17308,12 @@ public class vis_3D : MonoBehaviour
 
         return (proj_path_found, pars_found);
     }
+    /// <summary>
+    /// Reads a parameter file.
+    /// </summary>
+    /// <param name="file">Parameter file.</param>
+    /// <param name="dir_path">Folder (optional).</param>
+    /// <returns>Parameters.</returns>
     public Params load_params_file(string file, string dir_path = null)
     {
         if (dir_path == null)
@@ -14151,6 +17351,12 @@ public class vis_3D : MonoBehaviour
         return pars;
     }
 
+    /// <summary>
+    /// Reads a numeric value after a key from the text of a parameter file.
+    /// </summary>
+    /// <param name="text">Text.</param>
+    /// <param name="key">Key.</param>
+    /// <returns>Value.</returns>
     public float from_params(string text, string key)
     {
         int key_idx = text.LastIndexOf(key);
@@ -14168,6 +17374,11 @@ public class vis_3D : MonoBehaviour
         return value;
     }
 
+    /// <summary>
+    /// Legacy: left or right folder of a camera.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <returns>Folder.</returns>
     public string choose_dir(int cam_idx)
     {
         string dir_l = path_dic + "left";
@@ -14184,6 +17395,12 @@ public class vis_3D : MonoBehaviour
         return dir_chosen;
     }
 
+    /// <summary>
+    /// Saves an image in the uv folder of the experiment.
+    /// </summary>
+    /// <param name="tex">Image.</param>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="blade_idx">Time-step index.</param>
     public void write_in_dic(Texture2D tex, int cam_idx, int blade_idx)
     {
         //02072024 string dir_chosen = choose_dir(cam_idx);
@@ -14201,6 +17418,12 @@ public class vis_3D : MonoBehaviour
         //30082024 convert_to_tif();
     }
 
+    /// <summary>
+    /// Creates a folder if needed and returns the image path of a time step.
+    /// </summary>
+    /// <param name="dir_path">Folder.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <returns>Path.</returns>
     public string dig_path(string dir_path, int blade_idx)
     {
         //application.persistentDataPath
@@ -14221,6 +17444,9 @@ public class vis_3D : MonoBehaviour
         return path_png;
     }
 
+    /// <summary>
+    /// Legacy: converts images to TIFF with a Python script.
+    /// </summary>
     public void convert_to_tif()
     {
         Process proc = new Process();
@@ -14230,6 +17456,9 @@ public class vis_3D : MonoBehaviour
         Process.Start("python", "Assets/png2tiff.py").WaitForExit();
     }
 
+    /// <summary>
+    /// Placeholder for a Hausdorff distance (empty).
+    /// </summary>
     public void hausdorff()
     {
         // info (paul): find hausdorff distance
@@ -14241,6 +17470,9 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Older version of the image rendering (unused).
+    /// </summary>
     public void take_pic_old()
     {
         int our_height = 256;
@@ -14275,6 +17507,10 @@ public class vis_3D : MonoBehaviour
         // info (paul): release render_tex
         render_tex.Release();
     }
+    /// <summary>
+    /// Collects the sample objects (children of 'blades').
+    /// </summary>
+    /// <returns>Samples.</returns>
     public List<GameObject> collect_blades()
     {
         GameObject blades = GameObject.Find("blades");
@@ -14290,6 +17526,11 @@ public class vis_3D : MonoBehaviour
         return children;
     }
 
+    /// <summary>
+    /// Builds a mesh from a vertex text file (verts_*.txt).
+    /// </summary>
+    /// <param name="blade_path">File.</param>
+    /// <returns>Mesh.</returns>
     public Mesh load_mesh_from_verts(string blade_path)
     {
         string[][] verts_strs = load_vert_strings(blade_path: blade_path);
@@ -14306,6 +17547,13 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Mirrors vertices in x and/or z.
+    /// </summary>
+    /// <param name="verts">Vertices.</param>
+    /// <param name="mirr_x">Factor for x (-1 = mirror).</param>
+    /// <param name="mirr_z">Factor for z (-1 = mirror).</param>
+    /// <returns>Mirrored vertices.</returns>
     public Vector3[] mirror_verts(Vector3[] verts, float mirr_x, float mirr_z)
     {
         List<Vector3> verts_new = new List<Vector3>();
@@ -14320,6 +17568,13 @@ public class vis_3D : MonoBehaviour
         return verts_new.ToArray();
     }
 
+    /// <summary>
+    /// Shifts triangle indices (optionally flips normals).
+    /// </summary>
+    /// <param name="tris">Indices.</param>
+    /// <param name="offset">Offset.</param>
+    /// <param name="flip_normals">True to flip the orientation.</param>
+    /// <returns>Shifted indices.</returns>
     public int[] shift_tris(int[] tris, int offset = -1, bool flip_normals = false)
     {
         List<int> shifted = new List<int>();
@@ -14343,6 +17598,10 @@ public class vis_3D : MonoBehaviour
         return shifted.ToArray();
     }
 
+    /// <summary>
+    /// Determines the bounds of the vertices.
+    /// </summary>
+    /// <param name="verts">Vertices.</param>
     public void find_verts_min_max(Vector3[] verts)
     {
         List<float> xs = new List<float>();
@@ -14369,6 +17628,11 @@ public class vis_3D : MonoBehaviour
         return;
     }
 
+    /// <summary>
+    /// Completes a quarter model to the full sample by mirroring.
+    /// </summary>
+    /// <param name="mesh">Quarter mesh.</param>
+    /// <returns>Full mesh.</returns>
     public Mesh mirror_mesh(Mesh mesh)
     {
         find_verts_min_max(mesh.vertices);
@@ -14390,6 +17654,15 @@ public class vis_3D : MonoBehaviour
         return mesh;
     }
 
+    /// <summary>
+    /// Loads a sample object from a vertex file (mesh, UVs, collider, speckles).
+    /// </summary>
+    /// <param name="blade_path">File.</param>
+    /// <param name="blade_idx">Time-step index.</param>
+    /// <param name="with_uv_init">True to compute UVs.</param>
+    /// <param name="with_collider">True to add a mesh collider.</param>
+    /// <param name="with_speckles">True to apply the speckle pattern.</param>
+    /// <returns>Sample object.</returns>
     public GameObject load_blade_from_verts(string blade_path, int blade_idx = -1, bool with_uv_init = false, 
         bool with_collider = true, bool with_speckles = false)
     {
@@ -14498,6 +17771,11 @@ public class vis_3D : MonoBehaviour
     //20092026 planare UV-Projektion, unabhaengig davon, in welcher lokalen Ebene das
     //Mesh liegt: die Achse mit der kleinsten Ausdehnung (Blechdicke/Woelbung) wird
     //verworfen, die beiden anderen auf [0, uv_scale] normiert.
+    /// <summary>
+    /// Planar UV projection on the two largest axes of the mesh (the thinnest axis is dropped).
+    /// </summary>
+    /// <param name="vertices">Vertices.</param>
+    /// <returns>UVs.</returns>
     public Vector2[] planar_uvs_from_largest_axes(Vector3[] vertices)
     {
         Vector3 min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
@@ -14534,6 +17812,10 @@ public class vis_3D : MonoBehaviour
     //auf "Realbild: Neu" wirken, ohne dass die Play-Session neu gestartet werden muss.
     //Setzt die Rotation vor dem erneuten Anwenden auf Quaternion.identity zurueck,
     //damit wiederholte Aufrufe sich nicht aufaddieren.
+    /// <summary>
+    /// Sets scale and rotation of the FBX sample (resets the rotation first).
+    /// </summary>
+    /// <param name="blade_obj">Sample object.</param>
     public void apply_nakajima_fbx_blade_transform(GameObject blade_obj)
     {
         blade_obj.transform.rotation = UnityEngine.Quaternion.identity;
@@ -14570,6 +17852,12 @@ public class vis_3D : MonoBehaviour
     //echten FBX-Datei (statt aus verts_*.txt rekonstruiert) fuer den Realbild-Vergleich.
     //Folgt denselben Achsen-/Positions-Konventionen wie load_blade_from_verts, damit die
     //Probe zur aktuellen Kamera-/Stereobasis-Ausrichtung passt.
+    /// <summary>
+    /// Loads the narrow Nakajima sample from an FBX file for the real-image comparison.
+    /// </summary>
+    /// <param name="resource_path">Resources path.</param>
+    /// <param name="obj_name">Object name.</param>
+    /// <returns>Sample object.</returns>
     public GameObject load_nakajima_fbx_blade(
         string resource_path = "Targets/fbx_files/nakajima/nakajima_50_fbx",
         string obj_name = "nakajima_50_fbx_blade")
@@ -14626,6 +17914,11 @@ public class vis_3D : MonoBehaviour
         return blade_obj;
     }
 
+    /// <summary>
+    /// Triangle indices for consecutive vertices.
+    /// </summary>
+    /// <param name="verts">Vertex coordinates.</param>
+    /// <returns>Indices.</returns>
     public int[] tris_from_coords(float[][] verts)
     {
         int scale_fac = 1;//08102024 3;
@@ -14640,6 +17933,11 @@ public class vis_3D : MonoBehaviour
         return tris;
     }
 
+    /// <summary>
+    /// Vertices from coordinate arrays.
+    /// </summary>
+    /// <param name="verts_coords">Coordinates.</param>
+    /// <returns>Vertices.</returns>
     public Vector3[] init_verts_from_coords(float[][] verts_coords)
     {
         Vector3[] vecs = new Vector3[verts_coords.Length];
@@ -14655,6 +17953,11 @@ public class vis_3D : MonoBehaviour
         return vecs;
     }
 
+    /// <summary>
+    /// Converts text fields to floats.
+    /// </summary>
+    /// <param name="verts_strs">Fields.</param>
+    /// <returns>Coordinates.</returns>
     public float[][] strs2floats(string[][] verts_strs)//212024B, int blade_idx = -1)
     {
         float[][] verts_cos = new float[verts_strs.Length][];
@@ -14679,6 +17982,11 @@ public class vis_3D : MonoBehaviour
         return verts_cos;
     }
 
+    /// <summary>
+    /// Reads the lines of a vertex file split into fields.
+    /// </summary>
+    /// <param name="blade_path">File.</param>
+    /// <returns>Fields per line.</returns>
     public string[][] load_vert_strings(string blade_path)
     {
         //string file_path = "C:/Users/go73jem/Desktop/play_blender_pycahrm/write_mesh/verts_92.txt";
@@ -14699,6 +18007,12 @@ public class vis_3D : MonoBehaviour
         return lines.ToArray();
     }
 
+    /// <summary>
+    /// Euclidean length sqrt(x^2 + y^2).
+    /// </summary>
+    /// <param name="x">x.</param>
+    /// <param name="y">y.</param>
+    /// <returns>Length.</returns>
     public double hypot(double x, double y)
     {
         double result = Math.Sqrt(x * x + y * y);
@@ -14724,6 +18038,21 @@ public class vis_3D : MonoBehaviour
 
 
     /*14032025 
+    /// <summary>
+    /// CPU TV-L1 optical flow at one scale (older 1D version, Zach et al. / Sanchez et al.).
+    /// </summary>
+    /// <param name="I0">Source image.</param>
+    /// <param name="I1">Target image.</param>
+    /// <param name="u1">x component of the flow.</param>
+    /// <param name="u2">y component of the flow.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <param name="tau">Time step.</param>
+    /// <param name="lambda">Data weight.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <param name="warps">Number of warps.</param>
+    /// <param name="epsilon">Stopping threshold.</param>
+    /// <param name="mode">Mode.</param>
     void Dual_TVL1_optic_flow(
             List<float> I0,           // source image
             List<float> I1,           // target image
@@ -14972,6 +18301,15 @@ public class vis_3D : MonoBehaviour
     }
     */
 
+    /// <summary>
+    /// Warps an image with a vector field using bicubic interpolation.
+    /// </summary>
+    /// <param name="input">Image.</param>
+    /// <param name="u">x component.</param>
+    /// <param name="v">y component.</param>
+    /// <param name="output">Warped image.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
     void bicubic_interpolation_warp(
         List<float> input,     // image to be warped
         List<float> u,         // x component of the vector field
@@ -15004,6 +18342,24 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// TV-L1 optical flow at one scale (GPU if available, otherwise CPU).
+    /// </summary>
+    /// <param name="I0">Source images.</param>
+    /// <param name="I1">Target images.</param>
+    /// <param name="ux">x component of the flow.</param>
+    /// <param name="uy">y component of the flow.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <param name="tau">Time step.</param>
+    /// <param name="lambda">Data weight.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <param name="warps">Number of warps.</param>
+    /// <param name="epsilon">Stopping threshold.</param>
+    /// <param name="verbose">True for log output.</param>
+    /// <param name="scale_idx">Index of the scale.</param>
+    /// <param name="total_scales">Number of scales.</param>
+    /// <returns>Tuple (ux, uy).</returns>
     (List<List<float>>, List<List<float>>) Dual_TVL1_optic_flow_new(
             List<List<float>> I0,           // source image
             List<List<float>> I1,           // target image
@@ -15166,6 +18522,12 @@ public class vis_3D : MonoBehaviour
         return result;
     }
 
+    /// <summary>
+    /// Copies the first values of a list into an array.
+    /// </summary>
+    /// <param name="list">List.</param>
+    /// <param name="size">Number of values.</param>
+    /// <returns>Array.</returns>
     static float[] tv_to_array(List<float> list, int size)
     {
         float[] arr = new float[size];
@@ -15176,6 +18538,13 @@ public class vis_3D : MonoBehaviour
         return arr;
     }
 
+    /// <summary>
+    /// Checks whether two lists have the same first values.
+    /// </summary>
+    /// <param name="a">First list.</param>
+    /// <param name="b">Second list.</param>
+    /// <param name="size">Number of values.</param>
+    /// <returns>True if equal.</returns>
     static bool tv_same_prefix(List<float> a, List<float> b, int size)
     {
         if (ReferenceEquals(a, b))
@@ -15199,6 +18568,23 @@ public class vis_3D : MonoBehaviour
     //  Zeitschritte kt mit identischen Eingaben (cv_main_async uebergibt {im, im}) werden nur einmal gerechnet.
     //  Anmerkung: die CPU-Version nutzt fuer alle kt rho_c[0]; die GPU rechnet jedes kt mit seinem eigenen rho_c.
     //  Bei identischen kt (derzeit immer) ist das gleich.
+    /// <summary>
+    /// Computes one scale of the flow on the GPU (TV-L1 or TGV-L1).
+    /// </summary>
+    /// <param name="I0">Source images.</param>
+    /// <param name="I1">Target images.</param>
+    /// <param name="ux">x component.</param>
+    /// <param name="uy">y component.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <param name="tau">Time step.</param>
+    /// <param name="lambda">Data weight.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <param name="warps">Number of warps.</param>
+    /// <param name="epsilon">Stopping threshold.</param>
+    /// <param name="scale_idx">Index of the scale.</param>
+    /// <param name="total_scales">Number of scales.</param>
+    /// <returns>False if the caller has to compute on the CPU.</returns>
     bool try_tvl1_gpu(List<List<float>> I0, List<List<float>> I1, List<List<float>> ux, List<List<float>> uy,
         int nx, int ny, float tau, float lambda, float theta, int warps, float epsilon,
         int scale_idx, int total_scales)
@@ -15351,6 +18737,9 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Releases the GPU solvers on the main thread.
+    /// </summary>
     void release_tv_gpu_async()
     {
         main_thread_jobs.Enqueue(() =>
@@ -15366,6 +18755,9 @@ public class vis_3D : MonoBehaviour
         });
     }
 
+    /// <summary>
+    /// Unity callback: stops running GPU jobs and parameter studies and frees buffers.
+    /// </summary>
     void OnDisable()
     {
         //23092026 laufende GPU-Auftraege abbrechen und Puffer freigeben (Play beenden / Reload)
@@ -15384,6 +18776,19 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Gradient magnitude and constant part of the linearised data term (rho_c) per pixel.
+    /// </summary>
+    /// <param name="I0">Source images.</param>
+    /// <param name="I1w">Warped target images.</param>
+    /// <param name="I1wx">x gradient of the warped image.</param>
+    /// <param name="I1wy">y gradient of the warped image.</param>
+    /// <param name="ux">x component.</param>
+    /// <param name="uy">y component.</param>
+    /// <param name="size">Number of pixels.</param>
+    /// <param name="grad">Squared gradient (output).</param>
+    /// <param name="rho_c">Constant part (output).</param>
+    /// <returns>Tuple (grad, rho_c).</returns>
     public (List<List<float>>, List<List<float>>) compute_grad_rho_c_new(List<List<float>> I0, List<List<float>> I1w,
         List<List<float>> I1wx, List<List<float>> I1wy, List<List<float>> ux,
         List<List<float>> uy, int size, List<List<float>> grad, List<List<float>> rho_b, List<List<float>> rho_c,
@@ -15469,6 +18874,20 @@ public class vis_3D : MonoBehaviour
         return (error, p11, p12, p21, p22, ux, uy, vx, vy);
     }
 
+    /// <summary>
+    /// Thresholding step of TV-L1 at one pixel (data term).
+    /// </summary>
+    /// <param name="rho_c">Constant part.</param>
+    /// <param name="rho_debug">Debug output.</param>
+    /// <param name="I1wx">x gradient.</param>
+    /// <param name="I1wy">y gradient.</param>
+    /// <param name="ux">x component.</param>
+    /// <param name="uy">y component.</param>
+    /// <param name="i">Pixel index.</param>
+    /// <param name="l_t">lambda * theta.</param>
+    /// <param name="grad">Squared gradient.</param>
+    /// <param name="warpings">Warp index.</param>
+    /// <returns>Tuple (d1, d2) update.</returns>
     public (float, float) find_d1d2(List<float> rho_c, List<float> rho_debug,
         List<float> I1wx, List<float> I1wy, List<float> ux, List<float> uy, int i,
         float l_t, List<float> grad, List<float> decs_debug, List<float> fi_debug,
@@ -15515,6 +18934,19 @@ public class vis_3D : MonoBehaviour
         return (d1, d2);
     }
 
+    /// <summary>
+    /// Updates the flow from the auxiliary field and the divergence of the dual variable.
+    /// </summary>
+    /// <param name="div_p1">Divergence of p1.</param>
+    /// <param name="div_p2">Divergence of p2.</param>
+    /// <param name="vx">Auxiliary x.</param>
+    /// <param name="vy">Auxiliary y.</param>
+    /// <param name="ux">x component.</param>
+    /// <param name="uy">y component.</param>
+    /// <param name="error">Change (output).</param>
+    /// <param name="size">Number of pixels.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <returns>Tuple (ux, uy, change).</returns>
     public (List<float>, List<float>, float) estimate_u1u2(List<float> div_p1,
         List<float> div_p2, List<float> vx, List<float> vy, List<float> ux,
         List<float> uy, float error, int size, float theta)
@@ -15542,14 +18974,37 @@ public class vis_3D : MonoBehaviour
         error /= size;
         return (ux, uy, error);
     }
+    /// <summary>
+    /// Stores the current experiment configuration.
+    /// </summary>
+    /// <param name="config_now">Configuration.</param>
     public void set_config_now(ExpConfig config_now)
     {
         this.config_now = config_now;
     }
+    /// <summary>
+    /// Returns the current experiment configuration.
+    /// </summary>
+    /// <returns>Configuration.</returns>
     public ExpConfig get_config_now()
     {
         return config_now;
     }
+    /// <summary>
+    /// Updates the dual variables p of TV-L1.
+    /// </summary>
+    /// <param name="size">Number of pixels.</param>
+    /// <param name="tau">Time step.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <param name="u1x">x gradient of u1.</param>
+    /// <param name="u1y">y gradient of u1.</param>
+    /// <param name="u2x">x gradient of u2.</param>
+    /// <param name="u2y">y gradient of u2.</param>
+    /// <param name="p11">Dual variable.</param>
+    /// <param name="p12">Dual variable.</param>
+    /// <param name="p21">Dual variable.</param>
+    /// <param name="p22">Dual variable.</param>
+    /// <returns>Tuple of updated dual variables.</returns>
     public (List<float>, List<float>, List<float>, List<float>) find_p1p2(float
         size, float tau, float theta, List<float> u1x, List<float> u1y,
         List<float> u2x, List<float> u2y, List<float> p11, List<float> p12,
@@ -15585,6 +19040,11 @@ public class vis_3D : MonoBehaviour
     //26072024     }
     //26072024     im_dressed;
 
+    /// <summary>
+    /// Minimum and maximum of a matrix.
+    /// </summary>
+    /// <param name="x">Matrix.</param>
+    /// <returns>Tuple (min, max).</returns>
     static (float, float) getminmax(
         List<List<float>> x, // input array
         int x_cnt           // array size
@@ -15620,6 +19080,14 @@ public class vis_3D : MonoBehaviour
      * Function to normalize the images between 0 and 255
      *
      **/
+    /// <summary>
+    /// Normalises both images to a common gray-value range [0, 255].
+    /// </summary>
+    /// <param name="I0">First images.</param>
+    /// <param name="I1">Second images.</param>
+    /// <param name="I0n">Normalised first images (output).</param>
+    /// <param name="I1n">Normalised second images (output).</param>
+    /// <returns>Tuple of normalised images.</returns>
     (List<List<float>>, List<List<float>>) image_normalization(
             List<List<float>> I0,  // input image0
             List<List<float>> I1,  // input image1
@@ -15669,6 +19137,12 @@ public class vis_3D : MonoBehaviour
         }
         return (I0n, I1n);
     }
+    /// <summary>
+    /// Multiplies a list by a factor in place.
+    /// </summary>
+    /// <param name="mat">List.</param>
+    /// <param name="factor">Factor.</param>
+    /// <returns>The list.</returns>
     public List<float> scale_by(List<float> mat, float factor)
     {
         for (int i = 0; i < mat.Count; i++)
@@ -15678,6 +19152,13 @@ public class vis_3D : MonoBehaviour
 
         return mat;
     }
+    /// <summary>
+    /// Normalises an image vector to 0..1.
+    /// </summary>
+    /// <param name="u">Values.</param>
+    /// <param name="n_x">Width.</param>
+    /// <param name="n_y">Height.</param>
+    /// <returns>Normalised values.</returns>
     List<float> norm_floats(List<float> u, int n_x, int n_y)
     {
         //float min_val = 9999.;
@@ -15710,6 +19191,13 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Normalises each image vector of a list separately.
+    /// </summary>
+    /// <param name="u">Image vectors.</param>
+    /// <param name="n_x">Width.</param>
+    /// <param name="n_y">Height.</param>
+    /// <returns>Normalised vectors.</returns>
     List<List<float>> norm_floatss(List<List<float>> u, int n_x, int n_y)
     {
         // info (paul): norm list of lists, each separately
@@ -15720,6 +19208,13 @@ public class vis_3D : MonoBehaviour
         return u;
     }
 
+    /// <summary>
+    /// Crops the centre of a texture.
+    /// </summary>
+    /// <param name="source">Texture.</param>
+    /// <param name="target_w">Target width.</param>
+    /// <param name="target_h">Target height.</param>
+    /// <returns>Cropped texture.</returns>
     public Texture2D crop_tex(Texture2D source, int target_w, int target_h)
     {
         Texture2D cropped = new Texture2D(target_w, target_h, TextureFormat.ARGB32, false);
@@ -15732,11 +19227,21 @@ public class vis_3D : MonoBehaviour
         return cropped;
     }
     //23092026 Pfad zeigt auf eine vorhandene Bilddatei
+    /// <summary>
+    /// Checks whether a path points to an existing image file.
+    /// </summary>
+    /// <param name="path">Path.</param>
+    /// <returns>True if usable.</returns>
     static bool usable_image(string path)
     {
         return !string.IsNullOrWhiteSpace(path) && File.Exists(path);
     }
 
+    /// <summary>
+    /// Reads an image file (PNG/JPG or TIFF) as gray values.
+    /// </summary>
+    /// <param name="im_path">Image file.</param>
+    /// <returns>Image vector with width and height.</returns>
     im_dressed manage_read_im(string im_path)
     {
         byte[] bytes = File.ReadAllBytes(im_path);
@@ -15792,6 +19297,13 @@ public class vis_3D : MonoBehaviour
         return im_dressed_1;
     }
 
+    /// <summary>
+    /// Downsamples a matrix by nearest-neighbour sampling.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="fac_x">Factor in x.</param>
+    /// <param name="fac_y">Factor in y.</param>
+    /// <returns>Smaller matrix.</returns>
     public List<List<float>> sample_res(List<List<float>> mat, float fac_x = float.NaN, float fac_y = float.NaN)
     {
         // info (paul): sampling down to lower resolution (currently this just done by
@@ -15820,6 +19332,15 @@ public class vis_3D : MonoBehaviour
         return smaller;
     }
 
+    /// <summary>
+    /// Downsamples an image vector.
+    /// </summary>
+    /// <param name="floats">Values.</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <param name="fac_x">Factor in x.</param>
+    /// <param name="fac_y">Factor in y.</param>
+    /// <returns>Tuple (values, width, height).</returns>
     public (List<float>, int, int) sample_res_for_floats(List<float> floats, int width, int height, float fac_x, float fac_y)
     {
         float[][] mat_ar = floats2matrix(floats.ToArray(), width, height);
@@ -15832,6 +19353,13 @@ public class vis_3D : MonoBehaviour
         return (list, smaller.Count, smaller[0].Count);
     }
 
+    /// <summary>
+    /// Flips an image vector vertically.
+    /// </summary>
+    /// <param name="mat">Values.</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
+    /// <returns>Flipped values.</returns>
     public List<float> flip_floats(List<float> mat, int width, int height)
     {
         List<float> mat_new = zeros_of_size(mat.Count);
@@ -15882,8 +19410,20 @@ public class vis_3D : MonoBehaviour
     private volatile bool tgv_failed = false;
     private float tgv_ratio = 3f;
     private TgvL1Gpu tgv_gpu = null;
+    /// <summary>
+    /// Returns whether TGV regularisation is selected.
+    /// </summary>
+    /// <returns>True for TGV.</returns>
     public bool get_tv_use_tgv() { return tv_use_tgv; }
+    /// <summary>
+    /// Returns the TGV weight ratio alpha0/alpha1.
+    /// </summary>
+    /// <returns>Ratio.</returns>
     public float get_tgv_ratio() { return tgv_ratio; }
+    /// <summary>
+    /// Selects TGV or TV regularisation and stores the choice.
+    /// </summary>
+    /// <param name="use_tgv">True for TGV.</param>
     public void set_tv_use_tgv(bool use_tgv)
     {
         tv_use_tgv = use_tgv;
@@ -15892,6 +19432,10 @@ public class vis_3D : MonoBehaviour
         PlayerPrefs.Save();
         Debug.Log("Regularisierung: " + (use_tgv ? "TGV (alpha0/alpha1 = " + tgv_ratio + ")" : "TV"));
     }
+    /// <summary>
+    /// Sets and stores the TGV weight ratio alpha0/alpha1 (invalid values give 3).
+    /// </summary>
+    /// <param name="ratio">Ratio.</param>
     public void set_tgv_ratio(float ratio)
     {
         tgv_ratio = (float.IsNaN(ratio) || ratio <= 0f) ? 3f : ratio;
@@ -15899,6 +19443,10 @@ public class vis_3D : MonoBehaviour
         PlayerPrefs.Save();
     }
     //27092026 Kurzbeschreibung der Regularisierung fuer Log und Genauigkeitsbericht
+    /// <summary>
+    /// Short description of the regularisation for log and accuracy report.
+    /// </summary>
+    /// <returns>Text.</returns>
     public string describe_regularization()
     {
         return tv_use_tgv
@@ -15910,7 +19458,15 @@ public class vis_3D : MonoBehaviour
     private readonly System.Collections.Concurrent.ConcurrentQueue<Action> main_thread_jobs =
         new System.Collections.Concurrent.ConcurrentQueue<Action>();
 
+    /// <summary>
+    /// Returns whether the GPU solver is used.
+    /// </summary>
+    /// <returns>True for GPU.</returns>
     public bool get_tv_use_gpu() { return tv_use_gpu; }
+    /// <summary>
+    /// Selects GPU or CPU solver and stores the choice.
+    /// </summary>
+    /// <param name="use_gpu">True for GPU.</param>
     public void set_tv_use_gpu(bool use_gpu)
     {
         tv_use_gpu = use_gpu;
@@ -15920,13 +19476,46 @@ public class vis_3D : MonoBehaviour
         Debug.Log("TV-Rechenweg: " + (use_gpu ? "GPU" : "CPU"));
     }
 
+    /// <summary>
+    /// Returns the manual lambda (NaN = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public double get_tv_lambda_override() { return tv_lambda_override; }
+    /// <summary>
+    /// Returns the manual theta (NaN = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public double get_tv_theta_override() { return tv_theta_override; }
+    /// <summary>
+    /// Returns the manual number of scales (-1 = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public int get_tv_nscales_override() { return tv_nscales_override; }
+    /// <summary>
+    /// Returns the manual number of warps (-1 = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public int get_tv_nwarps_override() { return tv_nwarps_override; }
+    /// <summary>
+    /// Returns the manual number of iterations (-1 = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public int get_tv_iterations_override() { return tv_iterations_override; }
+    /// <summary>
+    /// Returns the manual stopping threshold (NaN = automatic).
+    /// </summary>
+    /// <returns>Value.</returns>
     public double get_tv_epsilon_override() { return tv_epsilon_override; }
 
+    /// <summary>
+    /// Sets and stores the manual solver parameters (NaN or -1 = automatic).
+    /// </summary>
+    /// <param name="lambda">Data weight.</param>
+    /// <param name="theta">Coupling parameter.</param>
+    /// <param name="nscales">Number of scales.</param>
+    /// <param name="nwarps">Number of warps.</param>
+    /// <param name="iterations">Number of iterations.</param>
+    /// <param name="epsilon">Stopping threshold.</param>
     public void set_tv_overrides(double lambda, double theta, int nscales, int nwarps,
         int iterations, double epsilon)
     {
@@ -15946,6 +19535,9 @@ public class vis_3D : MonoBehaviour
         Debug.Log("TV-Parameter gesetzt: " + describe_tv_overrides());
     }
 
+    /// <summary>
+    /// Loads the manual solver parameters from the PlayerPrefs.
+    /// </summary>
     public void load_tv_overrides()
     {
         tv_lambda_override = PlayerPrefs.GetFloat("tv_lambda", float.NaN);
@@ -15969,6 +19561,10 @@ public class vis_3D : MonoBehaviour
         Debug.Log("TV-Parameter geladen: " + describe_tv_overrides());
     }
 
+    /// <summary>
+    /// Text of the manual solver parameters (auto for automatic).
+    /// </summary>
+    /// <returns>Text.</returns>
     public string describe_tv_overrides()
     {
         Func<double, string> d = value => (double.IsNaN(value) || value <= 0d)
@@ -15979,6 +19575,12 @@ public class vis_3D : MonoBehaviour
             + ", its=" + i(tv_iterations_override) + ", eps=" + d(tv_epsilon_override);
     }
 
+    /// <summary>
+    /// Solver parameters of the analysis (defaults, experiment-specific values, manual overrides).
+    /// </summary>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <param name="exp_label">Experiment label.</param>
+    /// <returns>Tuple (lambda, theta, scales, warps).</returns>
     public (double, double, int, int) set_up_pars(bool with_dt, string exp_label = null)
     {
         int dt_compare_l = 0;
@@ -16038,6 +19640,12 @@ public class vis_3D : MonoBehaviour
 
         return (PAR_DEFAULT_LAMBDA, PAR_DEFAULT_THETA, PAR_DEFAULT_NSCALES, PAR_DEFAULT_NWARPS);
     }
+    /// <summary>
+    /// Frame indices of an image pair or triple.
+    /// </summary>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <param name="t_idx_i">Index of the pair.</param>
+    /// <returns>Tuple of three frame indices.</returns>
     public (int, int, int) fetch_t_idxs(bool with_dt, int t_idx_i)
     {
         int current_blade_idx = get_blade_idx();
@@ -16065,6 +19673,16 @@ public class vis_3D : MonoBehaviour
         return (t_idx_0, t_idx_1, t_idx_2);
     }
 
+    /// <summary>
+    /// Starts the flow computation of an image series (if no computation is running).
+    /// </summary>
+    /// <param name="paths">Image paths.</param>
+    /// <param name="in_dir">Input folder.</param>
+    /// <param name="out_dir">Output folder.</param>
+    /// <param name="pars">Parameters.</param>
+    /// <param name="series_idx">Index of the series.</param>
+    /// <param name="is_started">True to start.</param>
+    /// <returns>Tuple (index, started).</returns>
     public (int, bool) cv_series(List<string> paths, string in_dir = "", string out_dir = "",
         Params pars = null, int series_idx = 0, bool is_started = false)
     {
@@ -16076,6 +19694,14 @@ public class vis_3D : MonoBehaviour
         return (this.series_idx, this.is_started);
     }
 
+    /// <summary>
+    /// Coroutine: computes the flow for consecutive image pairs of a series.
+    /// </summary>
+    /// <param name="paths">Image paths.</param>
+    /// <param name="in_dir">Input folder.</param>
+    /// <param name="out_dir">Output folder.</param>
+    /// <param name="pars">Parameters.</param>
+    /// <returns>Coroutine enumerator.</returns>
     public IEnumerator cv_series_coroutine(List<string> paths, string in_dir = "", string out_dir = "",
         Params pars = null)
     {
@@ -16164,6 +19790,20 @@ public class vis_3D : MonoBehaviour
         is_tv_running = false;
     }
 
+    /// <summary>
+    /// Starts the flow computation for two images.
+    /// </summary>
+    /// <param name="path0">First image folder or file.</param>
+    /// <param name="path1">Second image folder or file.</param>
+    /// <param name="render_act_idx">Index of the render action.</param>
+    /// <param name="d_cam">Camera offset (0 = time pair, 1 = stereo).</param>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <param name="exp_label">Experiment label.</param>
+    /// <param name="save_path">Output path.</param>
+    /// <param name="im0_path">First image.</param>
+    /// <param name="im1_path">Second image.</param>
+    /// <param name="pars">Parameters.</param>
+    /// <param name="series_idx">Index of the series.</param>
     public void cv_for_paths(string path0, string path1, int render_act_idx, int d_cam = 0, 
         bool with_dt = false, string exp_label = null, string save_path = null,
         string im0_path = null, string im1_path = null, Params pars = null, int series_idx = -1)
@@ -16171,6 +19811,21 @@ public class vis_3D : MonoBehaviour
         StartCoroutine(cv_for_paths_coroutine(path0, path1, render_act_idx, d_cam, with_dt, exp_label, save_path, im0_path, im1_path, pars, series_idx));
     }
 
+    /// <summary>
+    /// Coroutine: multi-scale TV-L1/TGV-L1 flow computation of two images and saving of the result.
+    /// </summary>
+    /// <param name="path0">First image folder or file.</param>
+    /// <param name="path1">Second image folder or file.</param>
+    /// <param name="render_act_idx">Index of the render action.</param>
+    /// <param name="d_cam">Camera offset (0 = time pair, 1 = stereo).</param>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <param name="exp_label">Experiment label.</param>
+    /// <param name="save_path">Output path.</param>
+    /// <param name="im0_path">First image.</param>
+    /// <param name="im1_path">Second image.</param>
+    /// <param name="pars">Parameters.</param>
+    /// <param name="series_idx">Index of the series.</param>
+    /// <returns>Coroutine enumerator.</returns>
     public IEnumerator cv_for_paths_coroutine(string path0, string path1, int render_act_idx, int d_cam = 0, 
         bool with_dt = false, string exp_label = null, string save_path = null,
         string im0_path = null, string im1_path = null, Params pars = null, int series_idx = -1)
@@ -16314,6 +19969,16 @@ public class vis_3D : MonoBehaviour
 
     //27092026 proj_dir_override: Ergebnisordner direkt vorgeben (Parameterstudie rechnet nur TV neu auf den
     //  vorhandenen Bildern; find_dir_for_params braucht sonst die Render-Parameter des Laufs)
+    /// <summary>
+    /// Main flow computation of a render action: loads the image pairs, computes the flow over all scales, and saves the maps (PNG and .f32).
+    /// </summary>
+    /// <param name="render_act_idx">Index of the render action.</param>
+    /// <param name="d_cam">Camera offset (0 = time pair, 1 = stereo).</param>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <param name="exp_label">Experiment label.</param>
+    /// <param name="pars">Parameters.</param>
+    /// <param name="proj_dir_override">Result folder given directly (parameter study).</param>
+    /// <returns>Task.</returns>
     public async Task cv_main_async(int render_act_idx, int d_cam = 0, bool with_dt = false, string exp_label = null,
         Params pars = null, string proj_dir_override = null)
     {
@@ -16494,6 +20159,11 @@ public class vis_3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Reads numbers (one per line) from a text file.
+    /// </summary>
+    /// <param name="I0_path">File.</param>
+    /// <returns>Values.</returns>
     public List<float> txt2floats(string I0_path)
     {
         using StreamReader reader = new(I0_path);
@@ -16544,6 +20214,10 @@ public class vis_3D : MonoBehaviour
 
         return (u_mat, v_mat, min_val_u, min_val_v, max_val_u, max_val_v);
     }
+    /// <summary>
+    /// Creates the folder of an output file if needed.
+    /// </summary>
+    /// <param name="out_file_name_u">Output file.</param>
     public void arrange_dir(string out_file_name_u)
     {
         int index = out_file_name_u.LastIndexOf("/");
@@ -16655,6 +20329,22 @@ public class vis_3D : MonoBehaviour
         
     }
 
+    /// <summary>
+    /// Saves the stereo result as height data (maps and value ranges).
+    /// </summary>
+    /// <param name="heights_path">Output path.</param>
+    /// <param name="min_max_u_file">Range file of u.</param>
+    /// <param name="min_max_v_file">Range file of v.</param>
+    /// <param name="min_val_u">Minimum of u.</param>
+    /// <param name="min_val_v">Minimum of v.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <param name="max_val_u">Maximum of u.</param>
+    /// <param name="max_val_v">Maximum of v.</param>
+    /// <param name="u_mat">u map.</param>
+    /// <param name="v_mat">v map.</param>
+    /// <param name="I0">First image.</param>
+    /// <param name="I1">Second image.</param>
     public void manage_save_cv_heights(string heights_path, string min_max_u_file,
         string min_max_v_file, float min_val_u, float min_val_v, int nx, int ny,
         float max_val_u, float max_val_v, List<List<float>> u_mat,
@@ -16717,6 +20407,11 @@ public class vis_3D : MonoBehaviour
             //12102024 save_floats2(u_mat, file_name: "heights_tv");
     }
 
+    /// <summary>
+    /// Saves the u map as PNG.
+    /// </summary>
+    /// <param name="u_mat">u map.</param>
+    /// <param name="out_file_name_u">Output file.</param>
     public void save_flow_u(List<List<float>> u_mat, string out_file_name_u)
     {
         List<List<float>> u_lists = u_mat;//floats2_to_lists(u_mat);
@@ -16727,6 +20422,11 @@ public class vis_3D : MonoBehaviour
         if (analysis_sweep_running() && Path.GetFileName(out_file_name_u).StartsWith("time_flow_"))
             ExperimentImageGallery.AddRenderedImage(out_file_name_u);
     }
+    /// <summary>
+    /// Saves the v map as PNG.
+    /// </summary>
+    /// <param name="v_mat">v map.</param>
+    /// <param name="out_file_name_v">Output file.</param>
     public void save_flow_v(List<List<float>> v_mat, string out_file_name_v)
     {
         List<List<float>> v_lists = v_mat;//floats2_to_lists(v_mat);
@@ -16738,6 +20438,11 @@ public class vis_3D : MonoBehaviour
             ExperimentImageGallery.AddRenderedImage(out_file_name_v);
     }
 
+    /// <summary>
+    /// Deep copy of a nested list.
+    /// </summary>
+    /// <param name="u_input">Nested list.</param>
+    /// <returns>Copy.</returns>
     public List<List<float>> copy_floats(List<List<float>> u_input)
     {
         List<List<float>> floats = new List<List<float>>();
@@ -16754,6 +20459,11 @@ public class vis_3D : MonoBehaviour
         return floats;
 
     }
+    /// <summary>
+    /// Copy of a list.
+    /// </summary>
+    /// <param name="u_input">List.</param>
+    /// <returns>Copy.</returns>
     public List<float> copy_floats(List<float> u_input)
     {
         List<float> floats = new List<float>();
@@ -16765,6 +20475,15 @@ public class vis_3D : MonoBehaviour
         return floats;
 
     }
+    /// <summary>
+    /// Normalises a list to positive values and scales it.
+    /// </summary>
+    /// <param name="u">Values.</param>
+    /// <param name="n_x">Width.</param>
+    /// <param name="n_y">Height.</param>
+    /// <param name="scale">Factor.</param>
+    /// <param name="offset">Offset.</param>
+    /// <returns>Scaled values.</returns>
     public List<float> scale_floats(List<float> u, int n_x, int n_y, float scale, float offset)
     {
         float min_val = find_min(u, n_x, n_y);
@@ -16780,6 +20499,13 @@ public class vis_3D : MonoBehaviour
         return u;
     }
 
+    /// <summary>
+    /// Scales and shifts a matrix in place.
+    /// </summary>
+    /// <param name="mat">Matrix.</param>
+    /// <param name="factor">Factor.</param>
+    /// <param name="offset">Offset.</param>
+    /// <returns>The matrix.</returns>
     public List<List<float>> scale_mat(List<List<float>> mat, float factor, float offset)
     {
         for (int i = 0; i < mat.Count; i++)
@@ -16794,14 +20520,27 @@ public class vis_3D : MonoBehaviour
         return mat;
     }
 
+    /// <summary>
+    /// Returns the frame distance of the time comparison.
+    /// </summary>
+    /// <returns>Frame distance.</returns>
     public int get_dt_compare()
     {
         return dt_compare;
     }
+    /// <summary>
+    /// Sets the frame distance of the time comparison.
+    /// </summary>
+    /// <param name="input">Frame distance.</param>
     public void set_dt_compare(int input)
     {
         dt_compare = input;
     }
+    /// <summary>
+    /// First half of a list.
+    /// </summary>
+    /// <param name="u_input">List.</param>
+    /// <returns>First half.</returns>
     public List<float> first_half_of(List<float> u_input)
     {
         List<float> u_half = new List<float>();
@@ -16813,18 +20552,39 @@ public class vis_3D : MonoBehaviour
 
         return u_half;
     }
+    /// <summary>
+    /// Debugging helper: writes an array as image.
+    /// </summary>
+    /// <param name="u_input">Values.</param>
+    /// <param name="scale">Factor.</param>
     public void write_for_debug(float[] u_input, float scale)
     {
         write_for_debug(u_input.ToList(), with_norm: false, scale: scale, offset: 0f);
     }
+    /// <summary>
+    /// Debugging helper: writes a list as image.
+    /// </summary>
+    /// <param name="u_input">Values.</param>
+    /// <param name="scale">Factor.</param>
     public void write_for_debug(List<float> u_input, float scale)
     {
         write_for_debug(u_input, with_norm: false, scale: scale, offset: 0f);
     }
+    /// <summary>
+    /// Debugging helper: writes a list as image.
+    /// </summary>
+    /// <param name="u_input">Values.</param>
     public void write_for_debug(List<float> u_input)
     {
         write_for_debug(u_input, with_norm: false, scale: 1f, offset: 0f);
     }
+    /// <summary>
+    /// Debugging helper: writes a list (one or two images) as PNG.
+    /// </summary>
+    /// <param name="u_input">Values.</param>
+    /// <param name="with_norm">True to normalise.</param>
+    /// <param name="scale">Factor.</param>
+    /// <param name="offset">Offset.</param>
     public void write_for_debug(List<float> u_input, bool with_norm = false, float scale = 1f, float offset = 0f)
     {
         List<float> u = copy_floats(u_input);
@@ -16853,6 +20613,12 @@ public class vis_3D : MonoBehaviour
         Texture2D tex_u = mat2tex(u_lists, with_switch_dims: false);
         System.IO.File.WriteAllBytes(out_file_name_u, tex_u.EncodeToPNG());
     }
+    /// <summary>
+    /// Debugging helper: writes a matrix as PNG.
+    /// </summary>
+    /// <param name="u_lists">Matrix.</param>
+    /// <param name="scale">Factor.</param>
+    /// <param name="offset">Offset.</param>
     public void write_mat_for_debug(List<List<float>> u_lists, float scale = 1f, float offset = 0f)
     {
         List<List<float>> u_copy = copy_mat(u_lists);
@@ -16881,6 +20647,12 @@ public class vis_3D : MonoBehaviour
         }
 
     }
+    /// <summary>
+    /// Writes the value range of a map to a text file.
+    /// </summary>
+    /// <param name="out_file_name_u">File.</param>
+    /// <param name="min_val">Minimum.</param>
+    /// <param name="max_val">Maximum.</param>
     void manage_write_max_min(string out_file_name_u, float min_val, float max_val)
     {
         //FILE* fptr;
@@ -16910,6 +20682,12 @@ public class vis_3D : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Writes or appends text to a file.
+    /// </summary>
+    /// <param name="path">File.</param>
+    /// <param name="text">Text.</param>
+    /// <param name="mode">append or overwrite.</param>
     public void write_to_txt(string path, string text, string mode = "append")
     {
         List<string> lines = new List<string>();
@@ -17120,6 +20898,14 @@ public class vis_3D : MonoBehaviour
      * (see [2] for details)
      *
      **/
+    /// <summary>
+    /// Divergence of a vector field (backward differences).
+    /// </summary>
+    /// <param name="v1">x component.</param>
+    /// <param name="v2">y component.</param>
+    /// <param name="div">Output.</param>
+    /// <param name="nx">Width.</param>
+    /// <returns>Divergence.</returns>
     List<List<float>> divergence(
             List<List<float>> v1, // x component of the vector field
             List<List<float>> v2, // y component of the vector field
@@ -17188,6 +20974,14 @@ public class vis_3D : MonoBehaviour
      * (see [2] for details)
      *
      **/
+    /// <summary>
+    /// Gradient with forward differences.
+    /// </summary>
+    /// <param name="f">Image.</param>
+    /// <param name="fx">x derivative (output).</param>
+    /// <param name="fy">y derivative (output).</param>
+    /// <param name="nx">Width.</param>
+    /// <returns>Tuple (fx, fy).</returns>
     (List<float>, List<float>) forward_gradient(
             List<float> f, //input image
             List<float> fx,      //computed x derivative
@@ -17242,6 +21036,13 @@ public class vis_3D : MonoBehaviour
      *
      **/
 
+        /// <summary>
+        /// Gradient with central differences.
+        /// </summary>
+        /// <param name="input">Image.</param>
+        /// <param name="dx">x derivative (output).</param>
+        /// <param name="dy">y derivative (output).</param>
+        /// <param name="nx">Width.</param>
         void centered_gradient(
             List<float> input,  //input image
             List<float> dx,           //computed x derivative
@@ -17311,6 +21112,14 @@ public class vis_3D : MonoBehaviour
      * In-place Gaussian smoothing of an image
      *
      */
+    /// <summary>
+    /// Gaussian smoothing of images (separable convolution).
+    /// </summary>
+    /// <param name="I">Images (input and output).</param>
+    /// <param name="xdim">Width.</param>
+    /// <param name="ydim">Height.</param>
+    /// <param name="sigma">Standard deviation.</param>
+    /// <returns>Smoothed images.</returns>
     List<List<float>> gaussian(
         List<List<float>> I,             // input/output image
         int xdim,       // image width
@@ -17492,6 +21301,14 @@ public class vis_3D : MonoBehaviour
         return I;
     }
 
+    /// <summary>
+    /// Central-difference gradient of several images.
+    /// </summary>
+    /// <param name="input">Images.</param>
+    /// <param name="dx">x derivatives (output).</param>
+    /// <param name="dy">y derivatives (output).</param>
+    /// <param name="nx">Width.</param>
+    /// <returns>Tuple (dx, dy).</returns>
     (List<List<float>>, List<List<float>>) centered_gradient_new(
             List<List<float>> input,  //input image
             List<List<float>> dx,     //computed x derivative
@@ -17508,6 +21325,14 @@ public class vis_3D : MonoBehaviour
         return (dx, dy);
     }
 
+    /// <summary>
+    /// Central-difference gradient of one image.
+    /// </summary>
+    /// <param name="input">Image.</param>
+    /// <param name="dx">x derivative (output).</param>
+    /// <param name="dy">y derivative (output).</param>
+    /// <param name="nx">Width.</param>
+    /// <returns>Tuple (dx, dy).</returns>
     (List<float>, List<float>) centered_gradient_new(
             List<float> input,  //input image
             List<float> dx,     //computed x derivative
@@ -17733,6 +21558,13 @@ public class vis_3D : MonoBehaviour
       * Neumann boundary condition test
       *
     **/
+    /// <summary>
+    /// Neumann boundary condition: clamps an index to the image.
+    /// </summary>
+    /// <param name="x">Index.</param>
+    /// <param name="nx">Size.</param>
+    /// <param name="out_bool">Set to true if the index was outside.</param>
+    /// <returns>Index.</returns>
     static int neumann_bc(int x, int nx, List<bool> out_bool)
     {
         if (x < 0)
@@ -17754,6 +21586,13 @@ public class vis_3D : MonoBehaviour
       * Periodic boundary condition test
       *
     **/
+    /// <summary>
+    /// Periodic boundary condition for an index.
+    /// </summary>
+    /// <param name="x">Index.</param>
+    /// <param name="nx">Size.</param>
+    /// <param name="out_bool">Set to true if the index was outside.</param>
+    /// <returns>Index.</returns>
     static int periodic_bc(int x, int nx, List<bool> out_bool)
     {
         if (x < 0)
@@ -17779,6 +21618,13 @@ public class vis_3D : MonoBehaviour
       * Symmetric boundary condition test
       *
     **/
+    /// <summary>
+    /// Symmetric (mirrored) boundary condition for an index.
+    /// </summary>
+    /// <param name="x">Index.</param>
+    /// <param name="nx">Size.</param>
+    /// <param name="out_bool">Set to true if the index was outside.</param>
+    /// <returns>Index.</returns>
     static int symmetric_bc(int x, int nx, List<bool> out_bool)
     {
         if (x < 0)
@@ -17823,6 +21669,11 @@ public class vis_3D : MonoBehaviour
       * Cubic interpolation in one dimension
       *
     **/
+    /// <summary>
+    /// Cubic interpolation of four points.
+    /// </summary>
+    /// <param name="v">Four interpolation points.</param>
+    /// <returns>Interpolated value.</returns>
     static double cubic_interpolation_cell(
         List<double> v, //[4],  //interpolation points
         double x      //point to be interpolated
@@ -17839,6 +21690,12 @@ public class vis_3D : MonoBehaviour
       * Bicubic interpolation in two dimensions
       *
     **/
+    /// <summary>
+    /// Bicubic interpolation in a 4x4 cell.
+    /// </summary>
+    /// <param name="p">4x4 interpolation points.</param>
+    /// <param name="x">x position.</param>
+    /// <returns>Interpolated value.</returns>
     double bicubic_interpolation_cell(
         List<List<double>> p, //p[4][4], //array containing the interpolation points
         double x,       //x position to be interpolated
@@ -17859,6 +21716,15 @@ public class vis_3D : MonoBehaviour
       * Detect if the point goes outside the image domain.
       *
     **/
+    /// <summary>
+    /// Bicubic interpolation of an image at a sub-pixel position.
+    /// </summary>
+    /// <param name="input">Image.</param>
+    /// <param name="uu">x position.</param>
+    /// <param name="vv">y position.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <returns>Value (0 outside if border_out).</returns>
     float bicubic_interpolation_at(
 
     List<float> input, //image to be interpolated
@@ -17994,6 +21860,11 @@ public class vis_3D : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Replaces NaN entries by zero.
+    /// </summary>
+    /// <param name="pol">Matrix.</param>
+    /// <returns>The matrix.</returns>
     public List<List<double>> nans2zero(List<List<double>> pol)
     {
         for (int i = 0; i < pol.Count; i++)
@@ -18016,6 +21887,16 @@ public class vis_3D : MonoBehaviour
       * Compute the bicubic interpolation of an image.
       *
     **/
+    /// <summary>
+    /// Warps images with a vector field using bicubic interpolation.
+    /// </summary>
+    /// <param name="input">Images.</param>
+    /// <param name="u">x components.</param>
+    /// <param name="v">y components.</param>
+    /// <param name="output">Warped images.</param>
+    /// <param name="nx">Width.</param>
+    /// <param name="ny">Height.</param>
+    /// <returns>Warped images.</returns>
     List<List<float>> bicubic_interpolation_warp_new(
         List<List<float>> input,     // image to be warped
         List<List<float>> u,         // x component of the vector field
@@ -18063,6 +21944,12 @@ public class vis_3D : MonoBehaviour
           * Compute the size of a zoomed image from the zoom factor
           *
         **/
+        /// <summary>
+        /// Image size after zooming by a factor.
+        /// </summary>
+        /// <param name="nx">Width.</param>
+        /// <param name="ny">Height.</param>
+        /// <returns>Tuple (new width, new height).</returns>
         (int, int) zoom_size(
             int nx,      // width of the orignal image
             int ny,      // height of the orignal image
@@ -18082,6 +21969,14 @@ public class vis_3D : MonoBehaviour
           * Downsample an image
           *
         **/
+        /// <summary>
+        /// Downsamples images (Gaussian pre-smoothing and bicubic interpolation).
+        /// </summary>
+        /// <param name="I">Images.</param>
+        /// <param name="Iout">Output.</param>
+        /// <param name="nx">Width.</param>
+        /// <param name="ny">Height.</param>
+        /// <returns>Downsampled images.</returns>
         List<List<float>> zoom_out(
         List<List<float>> I,    // input image
         List<List<float>> Iout,       // output image
@@ -18141,6 +22036,17 @@ public class vis_3D : MonoBehaviour
     int i_c = 126;
     int j_c = 166;
     
+    /// <summary>
+    /// Upsamples flow fields to a larger scale (bicubic interpolation).
+    /// </summary>
+    /// <param name="I">Fields.</param>
+    /// <param name="Iout">Output.</param>
+    /// <param name="nx">Original width.</param>
+    /// <param name="ny">Original height.</param>
+    /// <param name="nxx">New width.</param>
+    /// <param name="nyy">New height.</param>
+    /// <param name="with_dt">True for time-series analysis.</param>
+    /// <returns>Tuple of upsampled fields.</returns>
     (List<List<float>>, List<List<float>>) zoom_in(
         List<List<float>> I, // input image
         List<List<float>> Iout,    // output image
@@ -18192,6 +22098,13 @@ public class Actioner
 
     public readonly Params pars;
 
+    /// <summary>
+    /// Step of the action list (action, label, flow index, parameters).
+    /// </summary>
+    /// <param name="act">Action.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="cv_render_idx">Index of the flow action.</param>
+    /// <param name="pars">Parameters.</param>
     public Actioner(Action act, string label = null, int cv_render_idx = -1,
         Params pars = null)
     {
@@ -18200,19 +22113,35 @@ public class Actioner
         this.cv_render_idx = cv_render_idx;
         this.pars = pars;
     }
+    /// <summary>
+    /// Returns the label.
+    /// </summary>
+    /// <returns>Label.</returns>
     public string get_label()
     {
         return this.label;
     }
+    /// <summary>
+    /// Sets the label.
+    /// </summary>
+    /// <param name="input">Label.</param>
     public void set_label(string input)
     {
         this.label = input;
     }
 
+    /// <summary>
+    /// Sets the index of the flow action.
+    /// </summary>
+    /// <param name="input">Index.</param>
     public void set_cv_render_idx(int input)
     {
         this.cv_render_idx = input;
     }
+    /// <summary>
+    /// Returns the index of the flow action.
+    /// </summary>
+    /// <returns>Index.</returns>
     public int get_cv_render_idx()
     {
         return cv_render_idx;
@@ -18226,6 +22155,12 @@ public class im_dressed
     public int width;
     public int height;
 
+    /// <summary>
+    /// Image vector with width and height.
+    /// </summary>
+    /// <param name="im_vec">Gray values.</param>
+    /// <param name="width">Width.</param>
+    /// <param name="height">Height.</param>
     public im_dressed(List<float> im_vec, int width, int height)
     {
         this.im_vec = im_vec;
@@ -18245,6 +22180,17 @@ public class Params
     private float poisson_error;
     private float lens_distortion;
 
+    /// <summary>
+    /// Parameters of an experiment (NaN = default).
+    /// </summary>
+    /// <param name="speckle_size">Speckle size.</param>
+    /// <param name="lighting_intensity">Illumination factor.</param>
+    /// <param name="lighting_pos_x">Light position x.</param>
+    /// <param name="lighting_pos_y">Light position y.</param>
+    /// <param name="lighting_pos_z">Light position z.</param>
+    /// <param name="gaussian_error">Gaussian noise.</param>
+    /// <param name="poisson_error">Poisson noise (N_peak).</param>
+    /// <param name="lens_distortion">Lens distortion.</param>
     public Params(float speckle_size = float.NaN, float lighting_intensity = float.NaN,
         float lighting_pos_x = float.NaN, float lighting_pos_y = float.NaN,
         float lighting_pos_z = float.NaN, float gaussian_error = float.NaN,
@@ -18306,66 +22252,130 @@ public class Params
         }
     }
 
+    /// <summary>
+    /// Returns the speckle size.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_speckle_size()
     {
         return this.speckle_size;
     }
+    /// <summary>
+    /// Sets the speckle size.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_speckle_size(float value)
     {
         this.speckle_size = value;
     }
+    /// <summary>
+    /// Returns the illumination factor.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_lighting_intensity()
     {
         return this.lighting_intensity;
     }
+    /// <summary>
+    /// Sets the illumination factor.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_lighting_intensity(float value)
     {
         this.lighting_intensity = value;
     }   
+    /// <summary>
+    /// Returns the light position x.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_lighting_pos_x()
     {
         return this.lighting_pos_x;
     }
+    /// <summary>
+    /// Sets the light position x.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_lighting_pos_x(float value)
     {
         this.lighting_pos_x = value;
     }
+    /// <summary>
+    /// Returns the light position y.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_lighting_pos_y()
     {
         return this.lighting_pos_y;
     }
+    /// <summary>
+    /// Sets the light position y.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_lighting_pos_y(float value)
     {
         lighting_pos_y = value;
     }
+    /// <summary>
+    /// Returns the light position z.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_lighting_pos_z()
     {
         return this.lighting_pos_z;
     }
+    /// <summary>
+    /// Sets the light position z.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_lighting_pos_z(float value)
     {
         this.lighting_pos_z = value;
     }
+    /// <summary>
+    /// Returns the Gaussian noise.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_gaussian_error()
     {
         return this.gaussian_error;
     }
+    /// <summary>
+    /// Sets the Gaussian noise.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_gaussian_error(float value)
     {
         this.gaussian_error = value;
     }
+    /// <summary>
+    /// Returns the Poisson noise (N_peak).
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_poisson_error()
     {
         return this.poisson_error;
     }
+    /// <summary>
+    /// Sets the Poisson noise (N_peak).
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_poisson_error(float value)
     {
         this.poisson_error = value;
     }
+    /// <summary>
+    /// Returns the lens distortion.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_lens_distortion()
     {
         return this.lens_distortion;
     }
+    /// <summary>
+    /// Sets the lens distortion.
+    /// </summary>
+    /// <param name="value">Value.</param>
     public void set_lens_distortion(float value)
     {
         this.lens_distortion = value;
@@ -18391,6 +22401,12 @@ public class ExpConfig
     string save_path;
     string blade_path;
 
+    /// <summary>
+    /// Configuration of an experiment (field of view, label, speckle diameter, cameras, light).
+    /// </summary>
+    /// <param name="fov">Field of view.</param>
+    /// <param name="label">Label.</param>
+    /// <param name="diameter">Speckle diameter.</param>
     public ExpConfig(float fov = float.NaN, string label = "NO_LABEL", float diameter = 0.070f)
     {
         this.fov = fov;
@@ -18403,23 +22419,44 @@ public class ExpConfig
         cam_poss = new List<float[]>() { cam_poss_0, cam_poss_1 };
     }
 
+    /// <summary>
+    /// Sets the light position.
+    /// </summary>
+    /// <param name="val">Position {x, y, z}.</param>
     public void set_light_pos(float[] val)
     {
         this.light_pos = val;
     }
+    /// <summary>
+    /// Returns the light position.
+    /// </summary>
+    /// <returns>Position.</returns>
     public float[] get_light_pos()
     {
         return this.light_pos;
     }
+    /// <summary>
+    /// Sets the light rotation.
+    /// </summary>
+    /// <param name="val">Quaternion.</param>
     public void set_light_quat(float[] val)
     {
         this.light_quat = val;
     }
+    /// <summary>
+    /// Returns the light rotation.
+    /// </summary>
+    /// <returns>Quaternion.</returns>
     public float[] get_light_quat()
     {
         return this.light_quat;
     }
 
+    /// <summary>
+    /// Index of a coordinate name.
+    /// </summary>
+    /// <param name="coord">x, y, or z.</param>
+    /// <returns>0, 1, 2 (or -1).</returns>
     public int coord2int(string coord)
     {
         int coord_idx = -1;
@@ -18439,74 +22476,140 @@ public class ExpConfig
 
         return coord_idx;
     }
+    /// <summary>
+    /// Sets one coordinate of a camera position.
+    /// </summary>
+    /// <param name="cam_idx">Camera index.</param>
+    /// <param name="coord">x, y, or z.</param>
+    /// <param name="val">Value.</param>
     public void set_cam_pos(int cam_idx, string coord, float val)
     {
         // info (paul): e.g. cam_idx = 0, coord="z", val="2.15"
 
         this.cam_poss[cam_idx][coord2int(coord)] = val;
     }
+    /// <summary>
+    /// Returns the camera positions.
+    /// </summary>
+    /// <returns>Positions.</returns>
     public List<float[]> get_cam_poss()
     {
         return this.cam_poss;
     }
+    /// <summary>
+    /// Sets the field of view.
+    /// </summary>
+    /// <param name="input">Degrees.</param>
     public void set_fov(float input)
     {
         this.fov = input;
     }
+    /// <summary>
+    /// Returns the field of view.
+    /// </summary>
+    /// <returns>Degrees.</returns>
     public float get_fov()
     {
         return this.fov;
     }
+    /// <summary>
+    /// Sets the label.
+    /// </summary>
+    /// <param name="label">Label.</param>
     public void set_label(string label)
     {
         this.label = label;
     }
+    /// <summary>
+    /// Returns the label.
+    /// </summary>
+    /// <returns>Label.</returns>
     public string get_label()
     {
         return label;
     }
+    /// <summary>
+    /// Sets the speckle diameter.
+    /// </summary>
+    /// <param name="diameter">Diameter.</param>
     public void set_diameter(float diameter)
     {
         this.diameter = diameter;
     }
+    /// <summary>
+    /// Returns the speckle diameter.
+    /// </summary>
+    /// <returns>Diameter.</returns>
     public float get_diameter()
     {
         return this.diameter;
     }
 
+    /// <summary>
+    /// Sets the camera tilt.
+    /// </summary>
+    /// <param name="cam_angle">Degrees.</param>
     public void set_cam_angle(float cam_angle)
     {
         this.cam_angle = cam_angle;
     }
+    /// <summary>
+    /// Returns the camera tilt.
+    /// </summary>
+    /// <returns>Degrees.</returns>
     public float get_cam_angle()
     {
         return cam_angle;
     }
 
+    /// <summary>
+    /// Sets the output path.
+    /// </summary>
+    /// <param name="val">Path.</param>
     public void set_save_path(string val)
     {
         this.save_path = val;
     }
+    /// <summary>
+    /// Returns the output path.
+    /// </summary>
+    /// <returns>Path.</returns>
     public string get_save_path()
     {
         return this.save_path;
     }
 
+    /// <summary>
+    /// Sets the path of the sample data.
+    /// </summary>
+    /// <param name="input">Path.</param>
     public void set_blade_path(string input)
     {
         this.blade_path = input;
     }
 
+    /// <summary>
+    /// Returns the path of the sample data.
+    /// </summary>
+    /// <returns>Path.</returns>
     public string get_blade_path()
     {
         return this.blade_path;
     }
 
+    /// <summary>
+    /// Sets the ambient intensity.
+    /// </summary>
+    /// <param name="input">Value.</param>
     public void set_ambient_intensity(float input)
     {
         this.ambient_intensity = input;
     }
 
+    /// <summary>
+    /// Returns the ambient intensity.
+    /// </summary>
+    /// <returns>Value.</returns>
     public float get_ambient_intensity()
     {
         return this.ambient_intensity;

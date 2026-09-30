@@ -52,6 +52,14 @@ MODE_ORDER = list(MODE_LABELS)
 
 
 def to_float(s):
+    """Converts text to float (comma allowed).
+
+    Args:
+        s: Text.
+
+    Returns:
+        Number.
+    """
     return float(s.strip().replace(",", "."))
 
 
@@ -65,12 +73,30 @@ def decode_png(path):
 
 
 def unnormalize(val, v_min, v_max):
+    """Converts normalised values back to physical values (inverse of norm_mat).
+
+    Args:
+        val: Normalised values.
+        v_min: Minimum.
+        v_max: Maximum.
+
+    Returns:
+        Values.
+    """
     if v_min < 0 < v_max:
         return np.where(val >= 0, val * v_max, val * (-v_min))
     return val * (v_max - v_min) + v_min
 
 
 def read_params(path):
+    """Reads mean, std, min, and max from a params file.
+
+    Args:
+        path: File.
+
+    Returns:
+        Dict.
+    """
     with open(path, encoding="utf-8", errors="replace") as f:
         cells = f.read().strip().split("\t")
     # exp, paint, strain, mode, mean, std, min, max
@@ -79,12 +105,29 @@ def read_params(path):
 
 
 def read_min_max(path):
+    """Reads minimum and maximum from a text file.
+
+    Args:
+        path: File.
+
+    Returns:
+        Tuple (min, max).
+    """
     with open(path, encoding="utf-8", errors="replace") as f:
         parts = f.read().split()
     return to_float(parts[0]), to_float(parts[1])
 
 
 def find_nice_pics(dic, exp_filter=None):
+    """Finds the exported maps in nice_pics.
+
+    Args:
+        dic: path_dic prefix.
+        exp_filter: Text the experiment must contain.
+
+    Returns:
+        List of map entries.
+    """
     folder = os.path.join(dic + "exp_normal", "time_flow_v", "nice_pics")
     # seit 21.09.2026 optional mit Komponente und Aufloesung: ..._value_v_r128.png
     rx = re.compile(r"^im_(?P<exp>.+)_uv_(?P<strain>normal|derivative_\d+)_"
@@ -109,6 +152,18 @@ CLIP_PERCENTILE = 100.0  # per --pct: Farbskala bei diesem Perzentil kappen (Aus
 
 
 def draw_map(fig, ax, values, mask, mode, title, v_min, v_max):
+    """Draws one map with colour bar.
+
+    Args:
+        fig: Figure.
+        ax: Axes.
+        values: Values.
+        mask: Mask.
+        mode: Display mode.
+        title: Title.
+        v_min: Minimum.
+        v_max: Maximum.
+    """
     data = np.where(mask, values, np.nan)
     if CLIP_PERCENTILE < 100.0:
         finite = np.abs(data[np.isfinite(data)])
@@ -130,6 +185,12 @@ def draw_map(fig, ax, values, mask, mode, title, v_min, v_max):
 
 
 def plot_per_experiment(items, out_dir):
+    """One figure per experiment with all its maps.
+
+    Args:
+        items: Map entries.
+        out_dir: Output folder.
+    """
     by_exp = {}
     for it in items:
         by_exp.setdefault(it["exp"], []).append(it)
@@ -159,6 +220,13 @@ def plot_per_experiment(items, out_dir):
 
 
 def plot_mode_overview(items, mode, out_dir):
+    """Overview of one display mode over all experiments.
+
+    Args:
+        items: Map entries.
+        mode: Display mode.
+        out_dir: Output folder.
+    """
     its = [it for it in items if it["mode"] == mode]
     if not its:
         print("keine Karten fuer mode", mode)
@@ -184,6 +252,14 @@ def plot_mode_overview(items, mode, out_dir):
 
 
 def list_raw_experiments(dic):
+    """Lists the experiments with raw flow data.
+
+    Args:
+        dic: path_dic prefix.
+
+    Returns:
+        Experiment names.
+    """
     exps = []
     for u_dir in glob.glob(os.path.join(dic + "*", "time_flow_u")):
         exp_dir = os.path.dirname(u_dir)
@@ -196,6 +272,14 @@ def list_raw_experiments(dic):
 
 
 def plot_raw_flow(dic, exp, out_dir, res=None):
+    """Plots the raw flow maps of an experiment.
+
+    Args:
+        dic: path_dic prefix.
+        exp: Experiment.
+        out_dir: Output folder.
+        res: Resolution (None = all).
+    """
     exp_dir = dic + exp
     rx = re.compile(r"time_flow_u_(\d+)_r(\d+)\.png$")
     steps = set()
@@ -229,6 +313,7 @@ def plot_raw_flow(dic, exp, out_dir, res=None):
 
 
 def main():
+    """Command line: plots the maps exported by Unity."""
     here = os.path.dirname(os.path.abspath(__file__))
     project = os.path.dirname(here)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
